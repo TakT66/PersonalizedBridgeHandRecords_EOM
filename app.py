@@ -15,6 +15,11 @@ import threading
 from datetime import date, timedelta, datetime
 from pathlib import Path
 
+BASE_DIR = Path(__file__).resolve().parent
+FONT_PATH = BASE_DIR / "DejaVuSans.ttf"
+FONT_BOLD_PATH = BASE_DIR / "DejaVuSans-Bold.ttf"
+FONT_BOLD_ITALIC_PATH = BASE_DIR / "DejaVuSans-BoldOblique.ttf"
+
 import requests
 import streamlit as st
 from PIL import Image, ImageDraw, ImageFont
@@ -63,42 +68,25 @@ def load_valid_numbers():
 # ---------------------------------------------------------------------------
 # Font helpers
 # ---------------------------------------------------------------------------
+
 def make_font(size):
-    for name in ["arial.ttf", "Arial.ttf", "DejaVuSans.ttf",
-                 "LiberationSans-Regular.ttf", "FreeSans.ttf"]:
-        try:
-            return ImageFont.truetype(name, size)
-        except Exception:
-            pass
     try:
-        return ImageFont.load_default(size=size)
+        return ImageFont.truetype(str(FONT_PATH), size)
     except Exception:
         return ImageFont.load_default()
 
 def make_bold_font(size):
-    for name in ["arialbd.ttf", "Arial Bold.ttf", "DejaVuSans-Bold.ttf",
-                 "LiberationSans-Bold.ttf", "arial.ttf", "DejaVuSans.ttf"]:
-        try:
-            return ImageFont.truetype(name, size)
-        except Exception:
-            pass
     try:
-        return ImageFont.load_default(size=size)
+        return ImageFont.truetype(str(FONT_BOLD_PATH), size)
     except Exception:
-        return ImageFont.load_default()
+        return make_font(size)
+
 
 def make_bold_italic_font(size):
-    for name in ["arialbi.ttf", "Arial Bold Italic.ttf", "DejaVuSans-BoldOblique.ttf",
-                 "LiberationSans-BoldItalic.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf",
-                 "arial.ttf"]:
-        try:
-            return ImageFont.truetype(name, size)
-        except Exception:
-            pass
     try:
-        return ImageFont.load_default(size=size)
+        return ImageFont.truetype(str(FONT_BOLD_ITALIC_PATH), size)
     except Exception:
-        return ImageFont.load_default()
+        return make_bold_font(size)
 
 _MI  = Image.new("RGB", (4, 4))
 _MD  = ImageDraw.Draw(_MI)

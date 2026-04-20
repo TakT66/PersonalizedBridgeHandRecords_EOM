@@ -875,7 +875,7 @@ elif st.session_state.step == "auth":
 # ── STEP 3: Pick tournament (Fixed Transition) ──────────────────────────────
 elif st.session_state.step == "pick":
     st.title("🃏 Bridge Hand Records")
-    st.markdown("### Επιλογή Τουρνουά")
+    st.markdown("### Επιλογή Τουρνουά Τριών Τελευταίων Ημερών")
 
     if not st.session_state.tournaments:
         with st.spinner("Ανάκτηση δεδομένων..."):

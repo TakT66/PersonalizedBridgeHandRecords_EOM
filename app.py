@@ -693,7 +693,7 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     tbl_right = dt_x + tbl_total_w
 
     _ppm = 1240/210
-    _hcp_w = round(5.5*_ppm); _hcp_h = round(7.5*_ppm)
+    _hcp_w = round(10.0*_ppm); _hcp_h = round(7.5*_ppm)
     _hcp_rx2 = tbl_right; _hcp_ry1 = north_y - 4
     _hcp_rx1 = _hcp_rx2 - _hcp_w - round(10*_ppm)
     _hcp_ry2 = _hcp_ry1 + _hcp_h + 20

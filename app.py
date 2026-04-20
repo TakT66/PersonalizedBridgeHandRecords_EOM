@@ -723,7 +723,7 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     draw_hcp_kr(_hcp_cx, _hcp_ry2-hcph-1,   hcp_s, kr_s, "c")
     draw_hcp_kr(_hcp_rx1+2, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
 #    draw_hcp_kr(_hcp_rx2-2, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
-    draw_hcp_kr(_hcp_rx2 - 5, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
+    draw_hcp_kr(_hcp_rx2 - 10, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
 
     if dds_table:
         draw.rectangle([dt_x, dt_y, dt_x+tbl_total_w-1, dt_y+hdr_h-1], fill=(220,220,240))

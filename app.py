@@ -1025,34 +1025,38 @@ elif st.session_state.step == "pick":
 # ── STEP 4: Generate PDF ─────────────────────────────────────────────────────
 elif st.session_state.step == "generate":
 
-# Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
+    # Initialization of error state
+    if "error_msg" not in st.session_state:
+        st.session_state.error_msg = None
+
+    # UI Header logic (Logo + Title)
     st.markdown("""
         <style>
-        [data-testid="stHorizontalBlock"] {
-            align-items: center;
-            display: flex;
-        }
-        /* Προαιρετικά: Μειώνει το κενό πάνω από τον τίτλο */
-        .stApp h1 {
-            padding-top: 0rem;
-        }
+        [data-testid="stHorizontalBlock"] { align-items: center; display: flex; }
+        .stApp h1 { padding-top: 0rem; }
         </style>
         """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([0.07, 0.93]) 
-
     with col1:
         try:
             st.image("clubs.png", width=55)
         except:
             st.write("♣️")
-
     with col2:
-        # Χρησιμοποιούμε h3 ή h2 αν το Title σου φαίνεται πολύ μεγάλο τώρα που μίκρυνε η εικόνα
         st.title("Personalized EOM Hand Records")
 
-#    st.title(" Personalized EOM Hand Records")
-#    st.title(" Personalized EOM Hand Records")
+    # Αν υπάρχει σφάλμα, εμφάνισέ το και σταμάτησε την υπόλοιπη ροή
+    if st.session_state.error_msg:
+        st.error(st.session_state.error_msg)
+        if st.button("⬅ Πίσω στα τουρνουά", type="primary"):
+            st.session_state.error_msg = None
+            st.session_state.chosen_url = None
+            st.session_state.chosen_title = None
+            st.session_state.step = "pick"
+            st.rerun()
+        st.stop()
+
     reg           = st.session_state.reg
     page_url      = st.session_state.chosen_url
     chosen_title  = st.session_state.chosen_title
@@ -1067,19 +1071,15 @@ elif st.session_state.step == "generate":
     if st.button("🚀 Δημιουργία PDF", type="primary"):
         with st.spinner("Φόρτωση PBN…"):
             pbn_text = fetch_pbn_from_url(page_url)
+        
         if not pbn_text:
-            st.error("Δεν υπάρχουν διανομές για το τουρνουά που επιλέξατε.")
-            if st.button("⬅ Πίσω στα τουρνουά"):
-                st.session_state.chosen_url = None
-                st.session_state.chosen_title = None
-                st.session_state.step = "pick"
-                st.rerun()
-            st.stop()
+            st.session_state.error_msg = "Δεν υπάρχουν διανομές για το τουρνουά που επιλέξατε."
+            st.rerun()
 
         boards = parse_pbn(pbn_text)
         if not boards:
-            st.error("Δεν βρέθηκαν boards στο PBN αρχείο.")
-            st.stop()
+            st.session_state.error_msg = "Δεν βρέθηκαν boards στο PBN αρχείο."
+            st.rerun()
 
         with st.spinner("Αναζήτηση αποτελεσμάτων παίκτη…"):
             header      = scrape_tournament_info(page_url)
@@ -1088,13 +1088,8 @@ elif st.session_state.step == "generate":
             if card_url:
                 pair_results = scrape_pair_results(card_url, page_url)
             else:
-                st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
-                if st.button("⬅ Πίσω στα τουρνουά"):
-                    st.session_state.chosen_url = None
-                    st.session_state.chosen_title = None
-                    st.session_state.step = "pick"
-                    st.rerun()
-                st.stop()
+                st.session_state.error_msg = "Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε."
+                st.rerun()
 
         progress_bar = st.progress(0, text="Rendering boards…")
         images = []
@@ -1126,5 +1121,6 @@ elif st.session_state.step == "generate":
         )
 
     if st.button("← Πίσω στα τουρνουά"):
+        st.session_state.error_msg = None
         st.session_state.step = "pick"
         st.rerun()

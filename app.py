@@ -970,7 +970,7 @@ elif st.session_state.step == "pick":
 
 #    st.title(" Personalized EOM Hand Records")
 #    st.title(" Personalized EOM Hand Records")
-    st.markdown("### Επιλογή Τουρνουά Τριών Τελευταίων Ημερών")
+    st.markdown("### Επιλογή Τουρνουά Τελευταίων Τριών Ημερών")
 
     if not st.session_state.tournaments:
         with st.spinner("Ανάκτηση δεδομένων..."):
@@ -1070,6 +1070,8 @@ elif st.session_state.step == "generate":
         if not pbn_text:
             st.error("Δεν υπάρχουν διανομές για το τουρνουά που επιλέξατε.")
             if st.button("⬅ Πίσω στα τουρνουά"):
+                st.session_state.chosen_url = None
+                st.session_state.chosen_title = None
                 st.session_state.step = "pick"
                 st.rerun()
             st.stop()
@@ -1088,6 +1090,8 @@ elif st.session_state.step == "generate":
             else:
                 st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
                 if st.button("⬅ Πίσω στα τουρνουά"):
+                    st.session_state.chosen_url = None
+                    st.session_state.chosen_title = None
                     st.session_state.step = "pick"
                     st.rerun()
                 st.stop()

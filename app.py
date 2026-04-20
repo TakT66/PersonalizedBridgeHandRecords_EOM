@@ -721,7 +721,7 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
 
     draw_hcp_kr(_hcp_cx, _hcp_ry1+1,        hcp_n, kr_n, "c")
     draw_hcp_kr(_hcp_cx, _hcp_ry2-hcph-1,   hcp_s, kr_s, "c")
-    draw_hcp_kr(_hcp_rx1-5, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
+    draw_hcp_kr(_hcp_rx1-8, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
 #    draw_hcp_kr(_hcp_rx2-2, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
     draw_hcp_kr(_hcp_rx2 - 5, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
 
@@ -922,7 +922,7 @@ elif st.session_state.step == "auth":
 #    st.title(" Personalized EOM Hand Records")
 #    st.title(" Personalized EOM Hand Records")
     st.markdown("### Εξουσιοδότηση")
-    reg = st.text_input("Αριθμός Μητρώου παίκτη", placeholder="π.χ. 15672")
+    reg = st.text_input("Αριθμός Μητρώου Αθλητή", placeholder="π.χ. 15672")
     if st.button("✔ Είσοδος", type="primary"):
         if not reg.strip():
             st.error("⚠ Ο αριθμός μητρώου δεν μπορεί να είναι κενός.")
@@ -1082,7 +1082,7 @@ elif st.session_state.step == "generate":
             st.session_state.error_msg = "Δεν βρέθηκαν boards στο PBN αρχείο."
             st.rerun()
 
-        with st.spinner("Αναζήτηση αποτελεσμάτων παίκτη…"):
+        with st.spinner("Αναζήτηση αποτελεσμάτων αθλητή…"):
             header      = scrape_tournament_info(page_url)
             card_url    = find_card_url(page_url, reg)
             pair_results = {}

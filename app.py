@@ -793,10 +793,14 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
     n_pages = math.ceil(len(images) / BOARDS_PER_PAGE)
     pages   = []
     fhdr    = make_bold_font(28)
+    fpg     = make_bold_font(22)
 
     for page_idx in range(n_pages):
         page = Image.new("RGB", (A4_W, A4_H), (255,255,255))
         draw = ImageDraw.Draw(page)
+        page_label = "{}/{}".format(page_idx + 1, n_pages)
+        pg_w = tw(page_label, fpg)
+        draw.text((A4_W - MARGIN - pg_w, 10), page_label, fill=(80,80,80), font=fpg)
         if header:
             draw.text((MARGIN, 10), header, fill=(30,30,30), font=fhdr)
         slice_ = images[page_idx*BOARDS_PER_PAGE:(page_idx+1)*BOARDS_PER_PAGE]
@@ -831,6 +835,7 @@ for key, default in [
     ("tournaments", None),
     ("chosen_url", None),
     ("chosen_title", None),
+    ("chosen_club", None),
 ]:
     if key not in st.session_state:
         st.session_state[key] = default
@@ -1016,6 +1021,7 @@ elif st.session_state.step == "pick":
         if st.button("🚀 Δημιουργία PDF", type="primary"):
             st.session_state.chosen_url = chosen["url"]
             st.session_state.chosen_title = chosen["title"]
+            st.session_state.chosen_club = chosen.get("club", "")
             st.session_state.step = "generate" # <--- Πρέπει να είναι "generate"
             st.rerun()
 
@@ -1062,6 +1068,7 @@ elif st.session_state.step == "generate":
     reg           = st.session_state.reg
     page_url      = st.session_state.chosen_url
     chosen_title  = st.session_state.chosen_title
+    chosen_club   = st.session_state.chosen_club or ""
 
     st.markdown("**Τουρνουά:** {}".format(chosen_title))
     st.markdown("**Αριθμός Μητρώου:** {}".format(reg))
@@ -1085,6 +1092,11 @@ elif st.session_state.step == "generate":
 
         with st.spinner("Αναζήτηση αποτελεσμάτων αθλητή…"):
             header      = scrape_tournament_info(page_url)
+            # Αντικατάσταση "EOM" με το όνομα σωματείου αν υπάρχει
+            if chosen_club:
+                header = re.sub(r'\bEOM\b', chosen_club, header, flags=re.IGNORECASE)
+                if chosen_club not in header:
+                    header = chosen_club + "  |  " + header
             card_url    = find_card_url(page_url, reg)
             pair_results = {}
             if card_url:
@@ -1111,7 +1123,8 @@ elif st.session_state.step == "generate":
                 header=header, pair_results=pair_results, boards=boards)
 
         safe_title = re.sub(r'[^\w]', '_', chosen_title)[:60] or "bridge"
-        filename   = safe_title + ".pdf"
+        safe_club  = re.sub(r'[^\w]', '_', chosen_club)[:40] if chosen_club else ""
+        filename   = (safe_club + "_" + safe_title if safe_club else safe_title) + ".pdf"
 
         st.success("✅ Το PDF είναι έτοιμο!")
         st.download_button(

@@ -57,13 +57,25 @@ PLAYER_MAP = {"N": "north", "S": "south", "E": "east", "W": "west"}
 # ---------------------------------------------------------------------------
 # Authorization
 # ---------------------------------------------------------------------------
-VALID_FILE = Path(__file__).resolve().parent / "Valid_Registration_Numbers.txt"
+#VALID_FILE = Path(__file__).resolve().parent / "Valid_Registration_Numbers.txt"
+#
+#def load_valid_numbers():
+#    if not VALID_FILE.exists():
+#        return set()
+#    with open(VALID_FILE, encoding="utf-8", errors="ignore") as f:
+#        return {line.strip() for line in f if line.strip()}
 
 def load_valid_numbers():
-    if not VALID_FILE.exists():
+    try:
+        # Διαβάζει τη λίστα απευθείας από τα Secrets του Streamlit
+        # Επιστρέφει ένα set για πολύ γρήγορη αναζήτηση
+        return set(st.secrets["ALLOWED_AM"])
+    except Exception:
+        # Αν ξεχάσεις να τα ορίσεις στα Secrets, επιστρέφει κενό σετ
+        st.error("Critical Error: 'ALLOWED_AM' not found in Secrets.")
         return set()
-    with open(VALID_FILE, encoding="utf-8", errors="ignore") as f:
-        return {line.strip() for line in f if line.strip()}
+
+
 
 # ---------------------------------------------------------------------------
 # Font helpers

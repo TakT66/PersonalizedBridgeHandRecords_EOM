@@ -693,20 +693,18 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     tbl_right = dt_x + tbl_total_w
 
 
-# --- ΑΝΤΙΚΑΤΑΣΤΑΣΗ ΤΟΥ BLOCK ΥΠΟΛΟΓΙΣΜΟΥ HCP ΣΤΗ render_board ---
-    _ppm      = 1240 / 210
-    # Μειώνουμε το πλάτος (width) για να έρθουν τα N-S πιο κοντά μεταξύ τους
-    _hcp_w    = round(5.0 * _ppm) 
+# --- ΔΙΟΡΘΩΜΕΝΟΣ ΥΠΟΛΟΓΙΣΜΟΣ HCP ---
+    _ppm = 1240 / 210
     
-    # Το δεξί όριο παραμένει το τέλος του πίνακα DDS
-    _hcp_rx2  = tbl_right 
-    # Το αριστερό όριο υπολογίζεται βάσει του νέου στενού πλάτους
-    _hcp_rx1  = _hcp_rx2 - _hcp_w - round(12 * _ppm) 
+    # 1. Βρίσκουμε το κέντρο του χώρου ανάμεσα στο Compass (bx2) και το DDS Table (dt_x)
+    _hcp_cx = (bx2 + dt_x) // 2
+    _hcp_cy = side_y + (lh * 2) - 4 # Κέντρο καθ' ύψος
     
-    _hcp_ry1  = north_y - 4
-    _hcp_ry2  = south_y + lh - 4 # Το φέρνουμε στο ύψος του South hand
-    _hcp_cx   = (_hcp_rx1 + _hcp_rx2) // 2
-    _hcp_cy   = (side_y + lh * 2) # Κεντράρισμα καθ' ύψος με τα East/West hands
+    # 2. Ορίζουμε το spread (πόσο απέχουν μεταξύ τους)
+    # Μειώνουμε το v_spread για να έρθουν τα N-S πιο κοντά (όπως ζήτησες)
+    # Αυξάνουμε το h_spread για να μην κάνουν overlap τα E-W
+    h_spread = round(22 * _ppm) # Οριζόντια απόσταση E-W
+    v_spread = round(16 * _ppm) # Κατακόρυφη απόσταση N-S (πιο μαζεμένα)
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
         hstr = str(hcp_val); kstr = "({})".format(kr_val)
@@ -721,11 +719,14 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
         draw.text((sx, y), hstr, fill=hcol, font=fhcpb)
         draw.text((sx + hw_ + gap, y + hcph // 2 - th(fkr) // 2), kstr, fill=krcol, font=fkr)
 
-    # Τοποθέτηση των HCP
-    draw_hcp_kr(_hcp_cx,      _hcp_ry1,           hcp_n, kr_n, "c") # North
-    draw_hcp_kr(_hcp_cx,      _hcp_ry2,           hcp_s, kr_s, "c") # South
-    draw_hcp_kr(_hcp_rx1 + 2, _hcp_cy,            hcp_w, kr_w, "l") # West
-    draw_hcp_kr(_hcp_rx2 - 2, _hcp_cy,            hcp_e, kr_e, "r") # East
+    # 3. Τοποθέτηση με βάση το κέντρο (_hcp_cx, _hcp_cy)
+    # North & South: Κεντραρισμένα οριζόντια (anchor="c")
+    draw_hcp_kr(_hcp_cx, _hcp_cy - v_spread, hcp_n, kr_n, "c")
+    draw_hcp_kr(_hcp_cx, _hcp_cy + v_spread, hcp_s, kr_s, "c")
+    
+    # West & East: Στα άκρα του οριζόντιου spread
+    draw_hcp_kr(_hcp_cx - (h_spread // 2), _hcp_cy, hcp_w, kr_w, "r") # West (δεξιά στοίχιση στο αριστερό σημείο)
+    draw_hcp_kr(_hcp_cx + (h_spread // 2), _hcp_cy, hcp_e, kr_e, "l") # East (αριστερή στοίχιση στο δεξί σημείο)
 
 
     if dds_table:
@@ -820,41 +821,36 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # ---------------------------------------------------------------------------
 # Streamlit UI
 # ---------------------------------------------------------------------------
-def _make_spade_icon():
-    """Create a ♠ favicon as a PIL Image for st.set_page_config."""
+
+def _make_clubs_icon():
+    """Create a ♣ favicon as a PIL Image for st.set_page_config."""
     img = Image.new("RGBA", (64, 64), (255, 255, 255, 0))
     d = ImageDraw.Draw(img)
-    # Try fonts in order of preference
     fnt = None
-    for font_path in [FONT_BOLD_PATH, FONT_PATH, FONT_BOLD_ITALIC_PATH]:
+    for font_path in [FONT_BOLD_PATH, FONT_PATH]:
         try:
             fnt = ImageFont.truetype(str(font_path), 56)
             break
-        except Exception:
-            pass
-    if fnt is None:
-        try:
-            fnt = ImageFont.load_default(size=48)
-        except Exception:
-            fnt = ImageFont.load_default()
-    # Center the ♠ glyph
+        except: pass
+    if fnt is None: fnt = ImageFont.load_default()
+    
+    symbol = "♣"
     try:
-        bbox = d.textbbox((0, 0), "♠", font=fnt)
-        gw = bbox[2] - bbox[0]
-        gh = bbox[3] - bbox[1]
-        ox = (64 - gw) // 2 - bbox[0]
-        oy = (64 - gh) // 2 - bbox[1]
-    except Exception:
-        ox, oy = 4, 4
-    d.text((ox, oy), "♠", fill=(0, 0, 0, 255), font=fnt)
+        bbox = d.textbbox((0, 0), symbol, font=fnt)
+        gw, gh = bbox[2] - bbox[0], bbox[3] - bbox[1]
+        ox, oy = (64 - gw) // 2 - bbox[0], (64 - gh) // 2 - bbox[1]
+    except: ox, oy = 4, 4
+    
+    # Σχεδίαση μαύρου σπαθιού
+    d.text((ox, oy), symbol, fill=(0, 0, 0, 255), font=fnt)
     return img
 
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon="♣️", # Χρήση του emoji για σπαθί
+    page_icon=_make_clubs_icon(), # Χρήση της PIL εικόνας αντί για emoji
     layout="centered"
 )
-)
+
 
 # ── Session state init ───────────────────────────────────────────────────────
 for key, default in [

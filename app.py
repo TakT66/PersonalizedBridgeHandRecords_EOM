@@ -863,7 +863,7 @@ elif st.session_state.step == "auth":
             if reg.strip() not in valid:
                 st.error(
                     "⛔ Η χρήση της εφαρμογής επιτρέπεται μόνο σε εξουσιοδοτημένους "
-                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το xxxxx@xxx.com"
+                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το tak_0000@yahoo.com"
                 )
                 st.stop()
             else:

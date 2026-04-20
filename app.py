@@ -693,14 +693,22 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     tbl_right = dt_x + tbl_total_w
 
     _ppm = 1240/210
-    _hcp_w = round(8.3*_ppm)
-    _hcp_rx2 = tbl_right
-    _hcp_rx1 = _hcp_rx2 - _hcp_w - round(10*_ppm)
-    _hcp_cx  = (_hcp_rx1+_hcp_rx2)//2
-    # Use actual hand positions for N/S to avoid overlap
-    _hcp_n_y  = north_y + hbh + 4          # just below North hand
-    _hcp_s_y  = south_y - hcph - 4         # just above South hand
-    _hcp_cy   = (_hcp_n_y + _hcp_s_y) // 2 # midpoint for W/E
+    # HCP layout: 4 values arranged in compass pattern in the right column
+    # N/S share a center x (_hcp_cx), W is left of it, E is right of it.
+    # Original _hcp_cx was center of a small box anchored to tbl_right.
+    # Fix: keep N/S at same _hcp_cx but increase vertical spread so they don't overlap.
+    # W/E: move further left and right respectively for more horizontal spread.
+    _hcp_w_box  = round(8.3*_ppm)
+    _hcp_rx2    = tbl_right
+    _hcp_rx1    = _hcp_rx2 - _hcp_w_box - round(10*_ppm)
+    _hcp_cx     = (_hcp_rx1 + _hcp_rx2) // 2   # N/S center x (unchanged)
+    # Vertical: pin N just below N-hand, S just above S-hand
+    _hcp_n_y    = north_y + hbh + 4             # below North hand
+    _hcp_s_y    = south_y - hcph - 4            # above South hand
+    _hcp_we_cy  = (_hcp_n_y + _hcp_s_y) // 2   # vertical midpoint for W/E
+    # Horizontal spread for W/E: W further left, E stays at tbl_right
+    _hcp_w_lx   = _hcp_rx1 - round(12*_ppm)    # W: shifted left of N/S box
+    _hcp_e_rx   = _hcp_rx2                      # E: right edge same as before
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
         hstr = str(hcp_val); kstr = "({})" .format(kr_val)
@@ -710,10 +718,10 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
         draw.text((sx, y), hstr, fill=hcol, font=fhcpb)
         draw.text((sx+hw_+gap, y+hcph//2-th(fkr)//2), kstr, fill=krcol, font=fkr)
 
-    draw_hcp_kr(_hcp_cx, _hcp_n_y,           hcp_n, kr_n, "c")
-    draw_hcp_kr(_hcp_cx, _hcp_s_y,            hcp_s, kr_s, "c")
-    draw_hcp_kr(_hcp_rx1+2, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
-    draw_hcp_kr(_hcp_rx2-2, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
+    draw_hcp_kr(_hcp_cx,   _hcp_n_y,            hcp_n, kr_n, "c")
+    draw_hcp_kr(_hcp_cx,   _hcp_s_y,             hcp_s, kr_s, "c")
+    draw_hcp_kr(_hcp_rx1,  _hcp_we_cy-hcph//2,  hcp_w, kr_w, "r")
+    draw_hcp_kr(_hcp_e_rx, _hcp_we_cy-hcph//2,  hcp_e, kr_e, "r")
 
     if dds_table:
         draw.rectangle([dt_x, dt_y, dt_x+tbl_total_w-1, dt_y+hdr_h-1], fill=(220,220,240))
@@ -809,7 +817,7 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon=":spades:",
+    page_icon="♠️",
     layout="centered"
 )
 
@@ -964,8 +972,8 @@ elif st.session_state.step == "generate":
                 pair_results = scrape_pair_results(card_url, page_url)
             else:
                 st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
-                if st.button("⬅ Επιστροφή στην αρχική σελίδα"):
-                    st.session_state.step = "disclaimer"
+                if st.button("⬅ Επιστροφή στην εισαγωγή αριθμού μητρώου"):
+                    st.session_state.step = "auth"
                     st.rerun()
                 st.stop()
 

@@ -842,7 +842,7 @@ if st.session_state.step == "disclaimer":
 
     with col1:
         try:
-            st.image("image_f9a8fb.png", width=55)
+            st.image("clubs.png", width=55)
         except:
             st.write("♣️")
 

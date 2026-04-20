@@ -699,16 +699,18 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     # Fix: keep N/S at same _hcp_cx but increase vertical spread so they don't overlap.
     # W/E: move further left and right respectively for more horizontal spread.
     _hcp_w_box  = round(8.3*_ppm)
-    _hcp_rx2    = tbl_right
+    _hcp_rx2    = tbl_right                          # E right edge
     _hcp_rx1    = _hcp_rx2 - _hcp_w_box - round(10*_ppm)
-    _hcp_cx     = (_hcp_rx1 + _hcp_rx2) // 2   # N/S center x (unchanged)
     # Vertical: pin N just below N-hand, S just above S-hand
-    _hcp_n_y    = north_y + hbh + 4             # below North hand
-    _hcp_s_y    = south_y - hcph - 4            # above South hand
-    _hcp_we_cy  = (_hcp_n_y + _hcp_s_y) // 2   # vertical midpoint for W/E
-    # Horizontal spread for W/E: W further left, E stays at tbl_right
-    _hcp_w_lx   = _hcp_rx1 - round(12*_ppm)    # W: shifted left of N/S box
-    _hcp_e_rx   = _hcp_rx2                      # E: right edge same as before
+    _hcp_n_y    = north_y + hbh + 4
+    _hcp_s_y    = south_y - hcph - 4
+    _hcp_we_cy  = (_hcp_n_y + _hcp_s_y) // 2
+    # W: midway between original (_hcp_rx1) and the too-far-left (_hcp_rx1 - round(12*_ppm))
+    # i.e. shift left by half of round(12*_ppm) = round(6*_ppm)
+    _hcp_w_rx   = _hcp_rx1 - round(6*_ppm)          # W right-anchor
+    _hcp_e_rx   = _hcp_rx2                           # E right-anchor
+    # N/S centered horizontally between W right-anchor and E right-anchor
+    _hcp_cx     = (_hcp_w_rx + _hcp_e_rx) // 2
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
         hstr = str(hcp_val); kstr = "({})" .format(kr_val)
@@ -720,7 +722,7 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
 
     draw_hcp_kr(_hcp_cx,   _hcp_n_y,            hcp_n, kr_n, "c")
     draw_hcp_kr(_hcp_cx,   _hcp_s_y,             hcp_s, kr_s, "c")
-    draw_hcp_kr(_hcp_rx1,  _hcp_we_cy-hcph//2,  hcp_w, kr_w, "r")
+    draw_hcp_kr(_hcp_w_rx, _hcp_we_cy-hcph//2,  hcp_w, kr_w, "r")
     draw_hcp_kr(_hcp_e_rx, _hcp_we_cy-hcph//2,  hcp_e, kr_e, "r")
 
     if dds_table:
@@ -815,9 +817,20 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # ---------------------------------------------------------------------------
 # Streamlit UI
 # ---------------------------------------------------------------------------
+def _make_spade_icon():
+    from PIL import Image, ImageDraw, ImageFont
+    img = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    d = ImageDraw.Draw(img)
+    try:
+        fnt = ImageFont.truetype(str(FONT_BOLD_PATH), 52)
+    except Exception:
+        fnt = ImageFont.load_default()
+    d.text((4, 4), "♠", fill=(0, 0, 0, 255), font=fnt)
+    return img
+
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon="♠️",
+    page_icon=_make_spade_icon(),
     layout="centered"
 )
 
@@ -874,7 +887,7 @@ elif st.session_state.step == "auth":
             if reg.strip() not in valid:
                 st.error(
                     "⛔ Η χρήση της εφαρμογής επιτρέπεται μόνο σε εξουσιοδοτημένους "
-                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το xxxxx@xxx.com"
+                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το tak_0000@yahoo.com"
                 )
                 st.stop()
             else:

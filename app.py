@@ -823,7 +823,18 @@ for key, default in [
 
 # ── STEP 1: Disclaimer ───────────────────────────────────────────────────────
 if st.session_state.step == "disclaimer":
-    st.title(" Personalized EOM Hand Records")
+
+# Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
+col1, col2 = st.columns([0.1, 0.9]) 
+
+with col1:
+    # Αντικατάστησε το "logo.png" με το όνομα του αρχείου σου
+    st.image("logo.png", width=60) 
+
+with col2:
+    st.title("Personalized EOM Hand Records")
+
+#    st.title(" Personalized EOM Hand Records")
     st.markdown("### Όροι Χρήσης Εφαρμογής")
     st.info(
         "Η χρήση αυτής της εφαρμογής παρέχεται δωρεάν, αποκλειστικά για "

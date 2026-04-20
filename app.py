@@ -36,7 +36,7 @@ except Exception:
 # Constants (identical to desktop version)
 # ---------------------------------------------------------------------------
 COLS            = 3
-ROWS            = 5
+ROWS            = 4
 BOARDS_PER_PAGE = COLS * ROWS
 MARGIN          = 40
 PADDING         = 16

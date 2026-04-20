@@ -805,7 +805,7 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # Streamlit UI
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Bridge Hand Records",
+    page_title="Personalized EOM Bridge Hand Records",
     page_icon="♠",
     layout="centered"
 )

@@ -879,7 +879,35 @@ if st.session_state.step == "disclaimer":
 
 # ── STEP 2: Authorization ────────────────────────────────────────────────────
 elif st.session_state.step == "auth":
-    st.title(" Personalized EOM Hand Records")
+
+# Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
+    st.markdown("""
+        <style>
+        [data-testid="stHorizontalBlock"] {
+            align-items: center;
+            display: flex;
+        }
+        /* Προαιρετικά: Μειώνει το κενό πάνω από τον τίτλο */
+        .stApp h1 {
+            padding-top: 0rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([0.07, 0.93]) 
+
+    with col1:
+        try:
+            st.image("clubs.png", width=55)
+        except:
+            st.write("♣️")
+
+    with col2:
+        # Χρησιμοποιούμε h3 ή h2 αν το Title σου φαίνεται πολύ μεγάλο τώρα που μίκρυνε η εικόνα
+        st.title("Personalized EOM Hand Records")
+
+#    st.title(" Personalized EOM Hand Records")
+#    st.title(" Personalized EOM Hand Records")
     st.markdown("### Εξουσιοδότηση")
     reg = st.text_input("Αριθμός Μητρώου παίκτη", placeholder="π.χ. 15672")
     if st.button("✔ Είσοδος", type="primary"):
@@ -901,7 +929,35 @@ elif st.session_state.step == "auth":
 
 # ── STEP 3: Pick tournament (Fixed Transition) ──────────────────────────────
 elif st.session_state.step == "pick":
-    st.title(" Personalized EOM Hand Records")
+
+# Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
+    st.markdown("""
+        <style>
+        [data-testid="stHorizontalBlock"] {
+            align-items: center;
+            display: flex;
+        }
+        /* Προαιρετικά: Μειώνει το κενό πάνω από τον τίτλο */
+        .stApp h1 {
+            padding-top: 0rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([0.07, 0.93]) 
+
+    with col1:
+        try:
+            st.image("clubs.png", width=55)
+        except:
+            st.write("♣️")
+
+    with col2:
+        # Χρησιμοποιούμε h3 ή h2 αν το Title σου φαίνεται πολύ μεγάλο τώρα που μίκρυνε η εικόνα
+        st.title("Personalized EOM Hand Records")
+
+#    st.title(" Personalized EOM Hand Records")
+#    st.title(" Personalized EOM Hand Records")
     st.markdown("### Επιλογή Τουρνουά Τριών Τελευταίων Ημερών")
 
     if not st.session_state.tournaments:
@@ -956,7 +1012,35 @@ elif st.session_state.step == "pick":
 
 # ── STEP 4: Generate PDF ─────────────────────────────────────────────────────
 elif st.session_state.step == "generate":
-    st.title(" Personalized EOM Hand Records")
+
+# Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
+    st.markdown("""
+        <style>
+        [data-testid="stHorizontalBlock"] {
+            align-items: center;
+            display: flex;
+        }
+        /* Προαιρετικά: Μειώνει το κενό πάνω από τον τίτλο */
+        .stApp h1 {
+            padding-top: 0rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([0.07, 0.93]) 
+
+    with col1:
+        try:
+            st.image("clubs.png", width=55)
+        except:
+            st.write("♣️")
+
+    with col2:
+        # Χρησιμοποιούμε h3 ή h2 αν το Title σου φαίνεται πολύ μεγάλο τώρα που μίκρυνε η εικόνα
+        st.title("Personalized EOM Hand Records")
+
+#    st.title(" Personalized EOM Hand Records")
+#    st.title(" Personalized EOM Hand Records")
     reg           = st.session_state.reg
     page_url      = st.session_state.chosen_url
     chosen_title  = st.session_state.chosen_title

@@ -825,14 +825,19 @@ for key, default in [
 if st.session_state.step == "disclaimer":
 
 # Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
-    col1, col2 = st.columns([0.1, 0.9]) 
+   st.markdown("<style>[data-testid='stHorizontalBlock'] {align-items: center;}</style>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns([0.06, 0.94]) 
 
     with col1:
-    # Αντικατάστησε το "logo.png" με το όνομα του αρχείου σου
-      st.image("clubs.png", width=60) 
+        try:
+            st.image("image_f9a8fb.png", width=38)
+        except:
+            st.write("♣️")
 
     with col2:
-      st.title("Personalized EOM Hand Records")
+        # Χρησιμοποιούμε h3 ή h2 αν το Title σου φαίνεται πολύ μεγάλο τώρα που μίκρυνε η εικόνα
+        st.title("Personalized EOM Hand Records")
 
 #    st.title(" Personalized EOM Hand Records")
     st.markdown("### Όροι Χρήσης Εφαρμογής")

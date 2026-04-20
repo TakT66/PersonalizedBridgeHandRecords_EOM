@@ -693,11 +693,14 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     tbl_right = dt_x + tbl_total_w
 
     _ppm = 1240/210
-    _hcp_w = round(8.3*_ppm); _hcp_h = round(7.5*_ppm)
-    _hcp_rx2 = tbl_right; _hcp_ry1 = north_y - 4
+    _hcp_w = round(8.3*_ppm)
+    _hcp_rx2 = tbl_right
     _hcp_rx1 = _hcp_rx2 - _hcp_w - round(10*_ppm)
-    _hcp_ry2 = _hcp_ry1 + _hcp_h + 20
-    _hcp_cx  = (_hcp_rx1+_hcp_rx2)//2; _hcp_cy = (_hcp_ry1+_hcp_ry2)//2
+    _hcp_cx  = (_hcp_rx1+_hcp_rx2)//2
+    # Use actual hand positions for N/S to avoid overlap
+    _hcp_n_y  = north_y + hbh + 4          # just below North hand
+    _hcp_s_y  = south_y - hcph - 4         # just above South hand
+    _hcp_cy   = (_hcp_n_y + _hcp_s_y) // 2 # midpoint for W/E
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
         hstr = str(hcp_val); kstr = "({})" .format(kr_val)
@@ -707,8 +710,8 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
         draw.text((sx, y), hstr, fill=hcol, font=fhcpb)
         draw.text((sx+hw_+gap, y+hcph//2-th(fkr)//2), kstr, fill=krcol, font=fkr)
 
-    draw_hcp_kr(_hcp_cx, _hcp_ry1+1,        hcp_n, kr_n, "c")
-    draw_hcp_kr(_hcp_cx, _hcp_ry2-hcph-1,   hcp_s, kr_s, "c")
+    draw_hcp_kr(_hcp_cx, _hcp_n_y,           hcp_n, kr_n, "c")
+    draw_hcp_kr(_hcp_cx, _hcp_s_y,            hcp_s, kr_s, "c")
     draw_hcp_kr(_hcp_rx1+2, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
     draw_hcp_kr(_hcp_rx2-2, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
 
@@ -806,7 +809,7 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon="♠",
+    page_icon=":spades:",
     layout="centered"
 )
 
@@ -961,6 +964,9 @@ elif st.session_state.step == "generate":
                 pair_results = scrape_pair_results(card_url, page_url)
             else:
                 st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
+                if st.button("⬅ Επιστροφή στην αρχική σελίδα"):
+                    st.session_state.step = "disclaimer"
+                    st.rerun()
                 st.stop()
 
         progress_bar = st.progress(0, text="Rendering boards…")

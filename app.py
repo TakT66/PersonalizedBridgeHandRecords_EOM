@@ -825,7 +825,7 @@ for key, default in [
 if st.session_state.step == "disclaimer":
 
 # Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
-   st.markdown("<style>[data-testid='stHorizontalBlock'] {align-items: center;}</style>", unsafe_allow_html=True)
+    st.markdown("<style>[data-testid='stHorizontalBlock'] {align-items: center;}</style>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([0.06, 0.94]) 
 

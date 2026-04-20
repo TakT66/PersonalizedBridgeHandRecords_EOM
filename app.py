@@ -825,13 +825,24 @@ for key, default in [
 if st.session_state.step == "disclaimer":
 
 # Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
-    st.markdown("<style>[data-testid='stHorizontalBlock'] {align-items: center;}</style>", unsafe_allow_html=True)
+    st.markdown("""
+        <style>
+        [data-testid="stHorizontalBlock"] {
+            align-items: center;
+            display: flex;
+        }
+        /* Προαιρετικά: Μειώνει το κενό πάνω από τον τίτλο */
+        .stApp h1 {
+            padding-top: 0rem;
+        }
+        </style>
+        """, unsafe_allow_html=True)
     
-    col1, col2 = st.columns([0.06, 0.94]) 
+    col1, col2 = st.columns([0.07, 0.93]) 
 
     with col1:
         try:
-            st.image("image_f9a8fb.png", width=38)
+            st.image("image_f9a8fb.png", width=55)
         except:
             st.write("♣️")
 

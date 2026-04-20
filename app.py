@@ -36,8 +36,9 @@ except Exception:
 # Constants (identical to desktop version)
 # ---------------------------------------------------------------------------
 COLS            = 3
-ROWS            = 4
-BOARDS_PER_PAGE = COLS * ROWS
+ROWS            = 5   # χρησιμοποιείται μόνο για τον υπολογισμό του μεγέθους κάθε board
+ROWS_PER_PAGE   = 4   # πόσες σειρές χωράνε πραγματικά στη σελίδα χωρίς κόψιμο
+BOARDS_PER_PAGE = COLS * ROWS_PER_PAGE
 MARGIN          = 40
 PADDING         = 16
 A4_W, A4_H      = 1240, 1754

@@ -549,274 +549,373 @@ def parse_date_str(date_str):
 # ---------------------------------------------------------------------------
 # Rendering (identical logic to desktop)
 # ---------------------------------------------------------------------------
-def render_board(board, cell_w, cell_h, pair_results=None, header=""):
-    dds_table = run_dds(board)
-    opt       = optimum_contract(dds_table, board.get("vul","None")) if dds_table else None
 
-    caption = ""
-    if pair_results:
-        pr = pair_results.get(board["board"])
-        if pr:
-            opp = " - ".join(filter(None, [pr.get("opponent1",""), pr.get("opponent2","")]))
-            round_str = ("Γύρος " + pr["round"]) if pr.get("round") else ""
-            first_parts = [p for p in [round_str, opp] if p]
-            parts2 = ["  ".join(first_parts)] if first_parts else []
-            detail = []
-            if pr.get("contract"): detail.append(pr["contract"])
-            if pr.get("declarer"): detail.append("από " + pr["declarer"])
-            if pr.get("lead"):     detail.append("Lead: " + pr["lead"])
-            if pr.get("score"):    detail.append(pr["score"])
-            if pr.get("pct"):      detail.append(pr["pct"].rstrip("%") + "%")
-            if detail:
-                parts2.append("  ".join(detail))
-            caption = "\n".join(parts2)
 
+
+# ---------------------------------------------------------------------------
+# RENDER BOARD
+# ---------------------------------------------------------------------------
+def render_board(board, dds_table, cell_w, cell_h, caption=""):
+    """
+    Layout (matching reference images):
+      - Board number: top-left, large font
+      - Optimum contract: top-right, above East's cards
+      - Compass hands: all left-aligned from their anchor x
+          North: centred above box
+          South: centred below box
+          West:  left edge starts from a fixed left margin
+          East:  left edge starts from right side of box
+      - HCP cross: bottom-left area, in cross format
+          (N on top, W left, E right, S bottom — centred on a point
+           to the left of South's cards)
+      - DD table: right side, two mini-tables (N/S, E/W)
+    """
     img  = Image.new("RGB", (cell_w, cell_h), (255, 255, 255))
     draw = ImageDraw.Draw(img)
-    PAD  = max(4, cell_w // 70)
 
-    fs_hand = max(10, cell_h // 19)
-    fs_cmp  = max(9,  cell_h // 22)
-    fs_hcp  = max(9,  cell_h // 22)
-    fs_th   = max(8,  cell_h // 26)
-    fs_tv   = max(9,  cell_h // 24)
+    PAD = max(4, cell_w // 70)
 
-    fhand = make_font(fs_hand)
-    fcmp  = make_bold_font(fs_cmp)
-    fhcpb = make_bold_font(fs_hcp + 2)
-    fkr   = make_font(max(7, fs_hcp - 1))
-    fth   = make_font(fs_th)
-    ftv   = make_font(fs_tv)
+    # ── Fonts ────────────────────────────────────────────────────────────
+    fs_hand  = max(10, cell_h // 19)
+    fs_cmp   = max(9,  cell_h // 22)
+    fs_bnum  = max(13, cell_h // 11)   # large board number
+    fs_hcp   = max(9,  cell_h // 22)
+    fs_opt   = max(9,  cell_h // 24)
+    fs_th    = max(8,  cell_h // 26)
+    fs_tv    = max(9,  cell_h // 24)
 
-    lh  = th(fhand) + 2
-    hbh = 4 * lh
+    fhand  = make_font(fs_hand)
+    fcmp   = make_bold_font(fs_cmp)
+    fbnum  = make_font(fs_bnum)
+    fhcp   = make_font(fs_hcp)
+    fhcpb  = make_bold_font(fs_hcp + 2)   # bold HCP / optimum font
+    fopt   = make_font(fs_opt)
+    fth    = make_font(fs_th)
+    ftv    = make_font(fs_tv)
 
+    lh  = th(fhand) + 2    # line height for card lines
+    hbh = 4 * lh           # full hand block height
+
+    # ── Layout zones ─────────────────────────────────────────────────────
+    # Right portion = DD table
     compass_w = int(cell_w * 0.63)
-    box_size  = max(46, min(compass_w // 3, cell_h // 4))
-    box_x     = (compass_w - box_size) // 2
-    _body_shift = round(1.5 * 1240 / 210) + round(2.0 * 1240 / 210)
-    box_y = (cell_h - box_size) // 2 + _body_shift
-    cx    = box_x + box_size // 2
-    cy    = box_y + box_size // 2
+    tbl_x     = compass_w + PAD
+    tbl_w     = cell_w - tbl_x - PAD
+
+    # Centre compass box — vertically centred, horizontally centred in
+    # compass area but shifted right a bit to leave room for West hand
+    box_size = max(46, min(compass_w // 3, cell_h // 4))   # slightly larger box
+    box_x    = (compass_w - box_size) // 2
+    # Shift entire body (compass + hands + tables) 0.15cm down
+    _body_shift = round(1.5 * 1240 / 210) + round(2.0 * 1240 / 210)   # ~9 + 12 = 21 px (extra 0.2cm down)
+    box_y    = (cell_h - box_size) // 2 + _body_shift
+    cx       = box_x + box_size // 2
+    cy       = box_y + box_size // 2
     bx, by, bx2, by2 = box_x, box_y, box_x + box_size, box_y + box_size
 
+    # Hand anchor positions
+    # North: centred above box
     north_y = box_y - hbh - PAD * 2
+    # South: centred below box
     south_y = box_y + box_size + PAD * 2
+    # West/East: vertically centred beside box
     side_y  = box_y + (box_size - hbh) // 2
 
+    # ── Vulnerability triangles ───────────────────────────────────────────
     vul    = board.get("vul", "None")
     ns_vul = vul in ("NS", "All")
     ew_vul = vul in ("EW", "All")
+
+    # Triangle fill: red if vulnerable, white if not
     ns_fill = (210, 50, 50) if ns_vul else (255, 255, 255)
     ew_fill = (210, 50, 50) if ew_vul else (255, 255, 255)
 
-    draw.polygon([(bx, by),  (bx2, by),  (cx, cy)], fill=ns_fill)
-    draw.polygon([(bx, by2), (bx2, by2), (cx, cy)], fill=ns_fill)
-    draw.polygon([(bx, by),  (bx, by2),  (cx, cy)], fill=ew_fill)
-    draw.polygon([(bx2, by), (bx2, by2), (cx, cy)], fill=ew_fill)
+    draw.polygon([(bx, by),  (bx2, by),  (cx, cy)], fill=ns_fill)  # N
+    draw.polygon([(bx, by2), (bx2, by2), (cx, cy)], fill=ns_fill)  # S
+    draw.polygon([(bx, by),  (bx, by2),  (cx, cy)], fill=ew_fill)  # W
+    draw.polygon([(bx2, by), (bx2, by2), (cx, cy)], fill=ew_fill)  # E
+    # No outline on the box (as requested)
 
+    # Compass letters (N/W/E/S) — black text inside the box
+    # Dealer gets a circle: red (filled) if that axis is vulnerable, white if not
     dealer = board.get("dealer", "N").upper()
-    dealer_axis_vul = {"N": ns_vul, "S": ns_vul, "E": ew_vul, "W": ew_vul}
+    dealer_axis_vul = {
+        "N": ns_vul, "S": ns_vul,
+        "E": ew_vul, "W": ew_vul,
+    }
+
+    # Inset letters further from the edge so the dealer disc clears the border
     _cmp_inset = max(2, box_size // 10)
     compass_positions = [
-        ("N", cx,              by + _cmp_inset,             "c"),
-        ("W", bx + _cmp_inset, cy - th(fcmp) // 2,          "l"),
-        ("E", bx2 - _cmp_inset, cy - th(fcmp) // 2,         "r"),
-        ("S", cx,              by2 - th(fcmp) - _cmp_inset, "c"),
+        ("N", cx,              by + _cmp_inset,                    "c"),
+        ("W", bx + _cmp_inset, cy - th(fcmp) // 2,                 "l"),
+        ("E", bx2 - _cmp_inset, cy - th(fcmp) // 2,                "r"),
+        ("S", cx,              by2 - th(fcmp) - _cmp_inset,        "c"),
     ]
     for label, lx, ly, anchor in compass_positions:
-        lw = tw(label, fcmp); lh_cmp = th(fcmp)
-        tx_ = lx - lw//2 if anchor=="c" else (lx - lw if anchor=="r" else lx)
-        if label == dealer:
-            circ_r = max(lw, lh_cmp)//2 + 4
-            circ_cx, circ_cy = tx_ + lw//2, ly + lh_cmp//2
-            is_vul = dealer_axis_vul.get(label, False)
-            circ_fill = (255,255,255) if is_vul else (210,50,50)
-            ss = 4; disc_d = (circ_r*2+2)*ss
-            disc_img = Image.new("RGBA", (disc_d, disc_d), (0,0,0,0))
-            disc_draw = ImageDraw.Draw(disc_img)
-            disc_draw.ellipse([0, 0, disc_d-1, disc_d-1], fill=circ_fill+(255,))
-            disc_img = disc_img.resize((circ_r*2+2, circ_r*2+2), Image.LANCZOS)
-            img.paste(disc_img, (circ_cx-circ_r-1, circ_cy-circ_r-1), disc_img)
-            letter_color = (0,0,0) if is_vul else (255,255,255)
+        lw = tw(label, fcmp)
+        lh_cmp = th(fcmp)
+        if anchor == "c":
+            tx_ = lx - lw // 2
+        elif anchor == "r":
+            tx_ = lx - lw
         else:
-            letter_color = (0,0,0)
+            tx_ = lx
+
+        if label == dealer:
+            circ_r = max(lw, lh_cmp) // 2 + 4
+            circ_cx = tx_ + lw // 2
+            circ_cy = ly + lh_cmp // 2
+            is_vul = dealer_axis_vul.get(label, False)
+            # Red disc when NON-vulnerable, white disc when vulnerable
+            circ_fill = (255, 255, 255) if is_vul else (210, 50, 50)
+            # Supersample 4x for smooth anti-aliased circle
+            ss = 4
+            disc_d = (circ_r * 2 + 2) * ss
+            disc_img = Image.new("RGBA", (disc_d, disc_d), (0, 0, 0, 0))
+            disc_draw = ImageDraw.Draw(disc_img)
+            disc_draw.ellipse([0, 0, disc_d - 1, disc_d - 1],
+                              fill=circ_fill + (255,))
+            disc_img = disc_img.resize(
+                (circ_r * 2 + 2, circ_r * 2 + 2), Image.LANCZOS)
+            img.paste(disc_img,
+                      (circ_cx - circ_r - 1, circ_cy - circ_r - 1),
+                      disc_img)
+            # Black letter on white disc, white letter on red disc
+            letter_color = (0, 0, 0) if is_vul else (255, 255, 255)
+        else:
+            letter_color = (0, 0, 0)
+
         draw.text((tx_, ly), label, fill=letter_color, font=fcmp)
 
+    # ── Draw hand helper (always left-aligned from x0) ────────────────────
     def draw_hand(hand_str, x0, y0):
-        hand = parse_hand(hand_str); y = y0; max_w = 0
+        """Draw 4 suit lines left-aligned from x0. Returns block width."""
+        hand = parse_hand(hand_str)
+        y    = y0
+        max_w = 0
         for suit in SUIT_ORDER:
-            sym = SUIT_SYMBOL[suit]; ranks = hand[suit] or "-"
-            sw_ = tw(sym, fhand); cw_ = tw(" "+ranks, fhand)
+            sym   = SUIT_SYMBOL[suit]
+            ranks = hand[suit] or "-"
+            sw_   = tw(sym, fhand)
+            cw_   = tw(" " + ranks, fhand)
             draw.text((x0, y), sym, fill=SUIT_COLOR[suit], font=fhand)
-            draw.text((x0+sw_, y), " "+ranks, fill=(0,0,0), font=fhand)
-            max_w = max(max_w, sw_+cw_); y += lh
+            draw.text((x0 + sw_, y), " " + ranks, fill=(0, 0, 0), font=fhand)
+            max_w = max(max_w, sw_ + cw_)
+            y += lh
         return max_w
 
+    # North — left-aligned, block centred horizontally in compass area
     nh  = parse_hand(board["north"])
-    nw_ = max(tw(SUIT_SYMBOL[s]+" "+(nh[s] or "-"), fhand) for s in SUIT_ORDER)
-    draw_hand(board["north"], (compass_w-nw_)//2, north_y)
+    nw_ = max(tw(SUIT_SYMBOL[s] + " " + (nh[s] or "-"), fhand) for s in SUIT_ORDER)
+    nx  = (compass_w - nw_) // 2
+    draw_hand(board["north"], nx, north_y)
 
-    sh_ = parse_hand(board["south"])
-    sw_ = max(tw(SUIT_SYMBOL[s]+" "+(sh_[s] or "-"), fhand) for s in SUIT_ORDER)
-    draw_hand(board["south"], (compass_w-sw_)//2, south_y)
+    # South — left-aligned, block centred horizontally in compass area
+    sh  = parse_hand(board["south"])
+    sw_ = max(tw(SUIT_SYMBOL[s] + " " + (sh[s] or "-"), fhand) for s in SUIT_ORDER)
+    sx_ = (compass_w - sw_) // 2
+    draw_hand(board["south"], sx_, south_y)
 
+    # West — left-aligned, anchored so rightmost card column ends at bx-PAD
     wh  = parse_hand(board["west"])
-    ww_ = max(tw(SUIT_SYMBOL[s]+" "+(wh[s] or "-"), fhand) for s in SUIT_ORDER)
-    wx_ = max(PAD, bx - PAD - ww_)
+    ww_ = max(tw(SUIT_SYMBOL[s] + " " + (wh[s] or "-"), fhand) for s in SUIT_ORDER)
+    wx_ = bx - PAD - ww_
+    wx_ = max(PAD, wx_)           # clamp to left edge
     draw_hand(board["west"], wx_, side_y)
-    draw_hand(board["east"], bx2+PAD, side_y)
 
-    fbnum_bi = make_bold_italic_font(44)
-    draw.text((PAD+8, PAD+23), str(board["board"]), fill=(0,0,0), font=fbnum_bi)
+    # East — left-aligned from right edge of box
+    ex_ = bx2 + PAD
+    ew_ = draw_hand(board["east"], ex_, side_y)
 
-    hcp_n = calc_hcp(board["north"]); kr_n = calc_krhcp(board["north"])
-    hcp_s = calc_hcp(board["south"]); kr_s = calc_krhcp(board["south"])
-    hcp_e = calc_hcp(board["east"]);  kr_e = calc_krhcp(board["east"])
-    hcp_w = calc_hcp(board["west"]);  kr_w = calc_krhcp(board["west"])
-    hcol  = (50, 50, 50); krcol = (80, 80, 180)
-    hcph  = th(fhcpb)
+    # ── Board number: top-left, bold italic, offset 8pts down+right ────────
+    fbnum_calibri = make_bold_italic_font(44)
+    bnum_str = str(board["board"])
+    draw.text((PAD + 8, PAD + 23), bnum_str, fill=(0, 0, 0), font=fbnum_calibri)
 
-    DD_COL_SUITS   = ["C","D","H","S","NT"]
-    DD_ROW_PLAYERS = ["N","S","E","W"]
-    rh      = max(15, th(ftv)+6); hdr_h = rh
-    lbl_cw  = max(18, tw("W",fth)+10)
-    suit_cw = max(20, tw("13",ftv)+10)
-    tbl_total_w = lbl_cw + 5*suit_cw
-    tbl_total_h = hdr_h + len(DD_ROW_PLAYERS)*rh
-    _ppm_dt = 1240/210; _dt_off = round(3.5*_ppm_dt/1.4142)
-    dt_x = bx2 + _dt_off
-    dt_y = by2 + _dt_off
-    dt_x = max(PAD, min(dt_x, cell_w-PAD-tbl_total_w))
-    dt_y = max(PAD, min(dt_y, cell_h-PAD-tbl_total_h))
-    dt_x += round(5*1240/210) + round(3*1240/210)
-    tbl_right = dt_x + tbl_total_w
+    # ── HCP + KRHCP rectangle ────────────────────────────────────────────────
+    hcp_n  = calc_hcp(board["north"]);  kr_n = calc_krhcp(board["north"])
+    hcp_s  = calc_hcp(board["south"]);  kr_s = calc_krhcp(board["south"])
+    hcp_e  = calc_hcp(board["east"]);   kr_e = calc_krhcp(board["east"])
+    hcp_w  = calc_hcp(board["west"]);   kr_w = calc_krhcp(board["west"])
+    hcol   = (50, 50, 50)
+    krcol  = (80, 80, 180)    # slightly blue for KRHCP
+    hcph   = th(fhcpb)
+    fkr    = make_font(max(7, fs_hcp - 1))   # smaller font for KRHCP in parens
 
-
-# --- ΔΙΟΡΘΩΜΕΝΟΣ ΥΠΟΛΟΓΙΣΜΟΣ HCP ---
-    _ppm = 1240 / 210
-    
-    # 1. Βρίσκουμε το κέντρο του χώρου ανάμεσα στο Compass (bx2) και το DDS Table (dt_x)
-    _hcp_cx = (bx2 + dt_x) // 2
-    _hcp_cy = side_y + (lh * 2) - 4 # Κέντρο καθ' ύψος
-    
-    # 2. Ορίζουμε το spread (πόσο απέχουν μεταξύ τους)
-    # Μειώνουμε το v_spread για να έρθουν τα N-S πιο κοντά (όπως ζήτησες)
-    # Αυξάνουμε το h_spread για να μην κάνουν overlap τα E-W
-    h_spread = round(22 * _ppm) # Οριζόντια απόσταση E-W
-    v_spread = round(16 * _ppm) # Κατακόρυφη απόσταση N-S (πιο μαζεμένα)
+    _ppm      = 1240 / 210
+    _hcp_w    = round(8.3  * _ppm)
+    _hcp_h    = round(7.5  * _ppm)
+    _diag_off = round(4.0  * _ppm / 1.4142)
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
-        hstr = str(hcp_val); kstr = "({})".format(kr_val)
-        hw_  = tw(hstr, fhcpb); kw_ = tw(kstr, fkr); gap = 2
+        """Draw  HCP (KR)  with anchor: c=centre, l=left, r=right."""
+        hstr = str(hcp_val)
+        kstr = "({})".format(kr_val)
+        hw_  = tw(hstr, fhcpb)
+        kw_  = tw(kstr, fkr)
+        gap  = 2
         total_w = hw_ + gap + kw_
         if anchor == "c":
             sx = x - total_w // 2
         elif anchor == "r":
             sx = x - total_w
-        else: # anchor == "l"
+        else:
             sx = x
         draw.text((sx, y), hstr, fill=hcol, font=fhcpb)
-        draw.text((sx + hw_ + gap, y + hcph // 2 - th(fkr) // 2), kstr, fill=krcol, font=fkr)
+        draw.text((sx + hw_ + gap, y + hcph // 2 - th(fkr) // 2),
+                  kstr, fill=krcol, font=fkr)
 
-    # 3. Τοποθέτηση με βάση το κέντρο (_hcp_cx, _hcp_cy)
-    # North & South: Κεντραρισμένα οριζόντια (anchor="c")
-    draw_hcp_kr(_hcp_cx, _hcp_cy - v_spread, hcp_n, kr_n, "c")
-    draw_hcp_kr(_hcp_cx, _hcp_cy + v_spread, hcp_s, kr_s, "c")
-    
-    # West & East: Στα άκρα του οριζόντιου spread
-    draw_hcp_kr(_hcp_cx - (h_spread // 2), _hcp_cy, hcp_w, kr_w, "r") # West (δεξιά στοίχιση στο αριστερό σημείο)
-    draw_hcp_kr(_hcp_cx + (h_spread // 2), _hcp_cy, hcp_e, kr_e, "l") # East (αριστερή στοίχιση στο δεξί σημείο)
+    # (HCP draw calls follow after DD geometry where _hcp_cx etc. are defined)
 
+    # ── DD table geometry (computed always so opt text can reference it) ───────
+    DD_COL_SUITS   = ["C", "D", "H", "S", "NT"]
+    DD_ROW_PLAYERS = ["N", "S", "E", "W"]
+    rh      = max(15, th(ftv) + 6)
+    hdr_h   = rh
+    lbl_cw  = max(18, tw("W", fth) + 10)
+    suit_cw = max(20, tw("13", ftv) + 10)
+    tbl_total_w = lbl_cw + 5 * suit_cw
+    tbl_total_h = hdr_h + len(DD_ROW_PLAYERS) * rh
+    _ppm_dt  = 1240 / 210
+    _dt_off  = round(3.5 * _ppm_dt / 1.4142)
+    dt_x = bx2 + _dt_off
+    dt_y = by2 + _dt_off
+    dt_x = max(PAD, min(dt_x, cell_w - PAD - tbl_total_w))
+    dt_y = max(PAD, min(dt_y, cell_h - PAD - tbl_total_h))   # back to original vertical position
+    _right_shift = round(5 * 1240 / 210) + round(3 * 1240 / 210)   # 0.8 cm right shift ~48 px
+    dt_x += _right_shift
 
+    # ── Optimum contract: just above DD table, right-aligned ──
+    opt = optimum_contract(dds_table, vul)
+    tbl_right = dt_x + tbl_total_w
+    if opt:
+        side, contract, score = opt
+        opt_text = "Opt: {} {} {}".format(side, contract, score)
+        opt_y = dt_y - th(fopt) - PAD
+        opt_w = tw(opt_text, fopt)
+        half_char = tw(" ", fopt)
+        draw_suit_text(draw, tbl_right - opt_w - half_char, opt_y, opt_text, fopt,
+                       default_color=(40, 40, 40))
+
+    # ── HCP box: at north_y (where opt used to be), right-aligned to DD table ──
+    _hcp_extra_left = round(10 * 1240 / 210)   # 1.0 cm in pixels ~59 px
+    _hcp_rx2 = tbl_right
+    _hcp_ry1 = north_y - 4                     # start at north_y, 4px enlarged upward
+    _hcp_rx1 = _hcp_rx2 - _hcp_w - _hcp_extra_left
+    _hcp_ry2 = _hcp_ry1 + _hcp_h + 20         # enlarged 20px total
+    _hcp_cx  = (_hcp_rx1 + _hcp_rx2) // 2
+    _hcp_cy  = (_hcp_ry1 + _hcp_ry2) // 2
+
+    # N — centre of top side
+    draw_hcp_kr(_hcp_cx, _hcp_ry1 + 1, hcp_n, kr_n, anchor="c")
+    # S — centre of bottom side
+    draw_hcp_kr(_hcp_cx, _hcp_ry2 - hcph - 1, hcp_s, kr_s, anchor="c")
+    # W — centre of left side
+    draw_hcp_kr(_hcp_rx1 + 2, _hcp_cy - hcph // 2, hcp_w, kr_w, anchor="l")
+    # E — centre of right side
+    draw_hcp_kr(_hcp_rx2 - 2, _hcp_cy - hcph // 2, hcp_e, kr_e, anchor="r")
+
+    # ── DD table: 5 cols (♣ ♦ ♥ ♠ NT) x 4 rows (N S E W) ───────────────────
     if dds_table:
-        draw.rectangle([dt_x, dt_y, dt_x+tbl_total_w-1, dt_y+hdr_h-1], fill=(220,220,240))
+
+        # Header row: suit symbols
+        draw.rectangle([dt_x, dt_y, dt_x + tbl_total_w - 1, dt_y + hdr_h - 1],
+                        fill=(220, 220, 240))
         for ci, suit in enumerate(DD_COL_SUITS):
-            cx_ = dt_x+lbl_cw+ci*suit_cw
-            sym, sc = ("NT",(0,0,100)) if suit=="NT" else (SUIT_SYMBOL[suit], SUIT_COLOR[suit])
-            draw.text((cx_+(suit_cw-tw(sym,fth))//2, dt_y+1), sym, fill=sc, font=fth)
-        for ri, player in enumerate(DD_ROW_PLAYERS):
-            ry  = dt_y+hdr_h+ri*rh
-            rbg = (245,245,255) if ri%2==0 else (255,255,255)
-            draw.rectangle([dt_x, ry, dt_x+tbl_total_w-1, ry+rh-1], fill=rbg)
-            draw.text((dt_x+(lbl_cw-tw(player,fth))//2, ry+1), player, fill=(0,0,100), font=fth)
-            for ci, suit in enumerate(DD_COL_SUITS):
-                tricks = dds_table.get(player,{}).get(suit,0)
-                level  = tricks - 6
-                if level <= 0: continue
-                vs = str(level); vx = dt_x+lbl_cw+ci*suit_cw
-                if level==7: vc=(140,0,140)
-                elif level==6: vc=(0,100,0)
-                elif level>={"NT":3,"S":4,"H":4,"D":5,"C":5}.get(suit,4): vc=(0,0,180)
-                else: vc=(0,0,0)
-                draw.text((vx+(suit_cw-tw(vs,ftv))//2, ry+1), vs, fill=vc, font=ftv)
-        draw.rectangle([dt_x, dt_y, dt_x+tbl_total_w-1, dt_y+tbl_total_h-1],
-                       outline=(150,150,150), width=1)
-        draw.line([(dt_x+lbl_cw, dt_y),(dt_x+lbl_cw, dt_y+tbl_total_h-1)],
-                  fill=(150,150,150), width=1)
-        draw.line([(dt_x, dt_y+hdr_h),(dt_x+tbl_total_w-1, dt_y+hdr_h)],
-                  fill=(150,150,150), width=1)
-
-    if caption:
-        fcap   = make_bold_italic_font(max(7, fs_th+4))
-        cap_lh = th(fcap)+1; RED=(200,0,0); BLACK=(40,40,40)
-        lines  = caption.split("\n")
-        max_w  = cell_w - 2*PAD
-        for li, line in enumerate(lines):
-            line_max_w = int(cell_w*0.80) if li==0 else max_w
-            tmp_w = max(cell_w*3, sum(tw(ch,fcap) for ch in line)+4)
-            line_h = th(fcap)
-            tmp = Image.new("RGBA",(tmp_w, line_h+4),(255,255,255,0))
-            tdraw = ImageDraw.Draw(tmp); x_=0
-            for ch in line:
-                color = RED if ch in ("♥","♦") else BLACK
-                tdraw.text((x_,0), ch, fill=color+(255,), font=fcap); x_+=tw(ch,fcap)
-            text_w = x_
-            tmp = tmp.crop((0,0,text_w,line_h+4))
-            if text_w > line_max_w:
-                tmp = tmp.resize((line_max_w, line_h+4), Image.LANCZOS)
-                paste_x = (cell_w-line_max_w)//2
+            cx_ = dt_x + lbl_cw + ci * suit_cw
+            if suit == "NT":
+                sym, sc = "NT", (0, 0, 100)
             else:
-                paste_x = max(PAD,(cell_w-text_w)//2)
-            img.paste(tmp,(paste_x, 2+li*cap_lh), tmp)
+                sym, sc = SUIT_SYMBOL[suit], SUIT_COLOR[suit]
+            draw.text((cx_ + (suit_cw - tw(sym, fth)) // 2, dt_y + 1),
+                      sym, fill=sc, font=fth)
 
-    draw.rectangle([0,0,cell_w-1,cell_h-1], outline=(160,160,160), width=1)
+        # Data rows
+        game_tricks = {"NT": 9, "S": 10, "H": 10, "D": 11, "C": 11}
+        for ri, player in enumerate(DD_ROW_PLAYERS):
+            ry  = dt_y + hdr_h + ri * rh
+            rbg = (245, 245, 255) if ri % 2 == 0 else (255, 255, 255)
+            draw.rectangle([dt_x, ry, dt_x + tbl_total_w - 1, ry + rh - 1],
+                            fill=rbg)
+            draw.text((dt_x + (lbl_cw - tw(player, fth)) // 2, ry + 1),
+                      player, fill=(0, 0, 100), font=fth)
+            for ci, suit in enumerate(DD_COL_SUITS):
+                tricks = dds_table.get(player, {}).get(suit, 0)
+                level  = tricks - 6          # convert tricks to contract level
+                if level <= 0:
+                    continue                  # show nothing if can't make 1-level
+                vs  = str(level)
+                vx  = dt_x + lbl_cw + ci * suit_cw
+                if level == 7:
+                    vc = (140, 0, 140)       # grand slam
+                elif level == 6:
+                    vc = (0, 100, 0)         # small slam
+                elif level >= {"NT":3,"S":4,"H":4,"D":5,"C":5}.get(suit,4):
+                    vc = (0, 0, 180)         # game
+                else:
+                    vc = (0, 0, 0)           # partial
+                draw.text((vx + (suit_cw - tw(vs, ftv)) // 2, ry + 1),
+                          vs, fill=vc, font=ftv)
+
+        # Table border + grid lines
+        draw.rectangle([dt_x, dt_y,
+                         dt_x + tbl_total_w - 1,
+                         dt_y + tbl_total_h - 1],
+                        outline=(150, 150, 150), width=1)
+        draw.line([(dt_x + lbl_cw, dt_y),
+                   (dt_x + lbl_cw, dt_y + tbl_total_h - 1)],
+                  fill=(150, 150, 150), width=1)
+        draw.line([(dt_x, dt_y + hdr_h),
+                   (dt_x + tbl_total_w - 1, dt_y + hdr_h)],
+                  fill=(150, 150, 150), width=1)
+
+    # ── Caption strip at very top of board (two lines) ─────────────────────
+    if caption:
+        fcap  = make_bold_italic_font(max(7, fs_th + 4))
+        cap_lh = th(fcap) + 1
+        RED   = (200, 0, 0)
+        BLACK = (40, 40, 40)
+        lines = caption.split("\n")
+        max_w = cell_w - 2 * PAD
+
+        def draw_fitted_line(line, cap_y, line_max_w=None):
+            """Render line at full font size; squish horizontally if too wide."""
+            if line_max_w is None:
+                line_max_w = max_w
+            line_h = th(fcap)
+            # Render onto a temporary wide image
+            tmp_w = max(cell_w * 3, sum(tw(ch, fcap) for ch in line) + 4)
+            tmp = Image.new("RGBA", (tmp_w, line_h + 4), (255, 255, 255, 0))
+            tdraw = ImageDraw.Draw(tmp)
+            x_ = 0
+            for ch in line:
+                color = RED if ch in ("♥", "♦") else BLACK
+                tdraw.text((x_, 0), ch, fill=color + (255,), font=fcap)
+                x_ += tw(ch, fcap)
+            text_w = x_
+            # Crop to actual text width
+            tmp = tmp.crop((0, 0, text_w, line_h + 4))
+            # Squish horizontally if wider than line_max_w, else centre as-is
+            if text_w > line_max_w:
+                tmp = tmp.resize((line_max_w, line_h + 4), Image.LANCZOS)
+                paste_x = (cell_w - line_max_w) // 2
+            else:
+                paste_x = max(PAD, (cell_w - text_w) // 2)
+            img.paste(tmp, (paste_x, cap_y), tmp)
+
+        for li, line in enumerate(lines):
+            # Line 0 (names): always leave 10% margin each side (80% usable width)
+            # Line 1 (contract etc): use full width minus PAD
+            line_max_w = int(cell_w * 0.80) if li == 0 else max_w
+            draw_fitted_line(line, 2 + li * cap_lh, line_max_w)
+
+    # Outer border
+    draw.rectangle([0, 0, cell_w - 1, cell_h - 1],
+                   outline=(160, 160, 160), width=1)
+
     return img
 
-def render_boards(boards, pair_results=None):
-    cell_w = (A4_W - 2*MARGIN - 2*PADDING) // COLS
-    cell_h = (A4_H - 2*MARGIN - 2*PADDING) // ROWS
-    images = []
-    for board in boards:
-        img = render_board(board, cell_w, cell_h, pair_results=pair_results)
-        images.append(img)
-    return images, cell_w, cell_h
-
-def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None, boards=None):
-    n_pages = math.ceil(len(images) / BOARDS_PER_PAGE)
-    pages   = []
-    fhdr    = make_bold_font(28)
-
-    for page_idx in range(n_pages):
-        page = Image.new("RGB", (A4_W, A4_H), (255,255,255))
-        draw = ImageDraw.Draw(page)
-        if header:
-            draw.text((MARGIN, 10), header, fill=(30,30,30), font=fhdr)
-        slice_ = images[page_idx*BOARDS_PER_PAGE:(page_idx+1)*BOARDS_PER_PAGE]
-        for i, img in enumerate(slice_):
-            row = i // COLS; col = i % COLS
-            x = MARGIN + col*(cell_w + PADDING)
-            y = MARGIN + PADDING + row*(cell_h + PADDING)
-            if header: y += 40
-            page.paste(img, (x, y))
-        pages.append(page)
-
-    buf = io.BytesIO()
-    if pages:
-        pages[0].save(buf, format="PDF", save_all=True,
-                      append_images=pages[1:], resolution=150)
-    buf.seek(0)
-    return buf.read()
 
 # ---------------------------------------------------------------------------
 # Streamlit UI

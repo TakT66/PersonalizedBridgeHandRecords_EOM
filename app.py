@@ -668,7 +668,7 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     draw_hand(board["east"], bx2+PAD, side_y)
 
     fbnum_bi = make_bold_italic_font(44)
-    draw.text((PAD+8, PAD+23), str(board["board"]), fill=(0,0,0), font=fbnum_bi)
+    draw.text((PAD+8, PAD+79), str(board["board"]), fill=(0,0,0), font=fbnum_bi)
 
     hcp_n = calc_hcp(board["north"]); kr_n = calc_krhcp(board["north"])
     hcp_s = calc_hcp(board["south"]); kr_s = calc_krhcp(board["south"])

@@ -721,7 +721,7 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
 
     draw_hcp_kr(_hcp_cx, _hcp_ry1+1,        hcp_n, kr_n, "c")
     draw_hcp_kr(_hcp_cx, _hcp_ry2-hcph-1,   hcp_s, kr_s, "c")
-    draw_hcp_kr(_hcp_rx1-8, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
+    draw_hcp_kr(_hcp_rx1-10, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
 #    draw_hcp_kr(_hcp_rx2-2, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
     draw_hcp_kr(_hcp_rx2 - 5, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
 

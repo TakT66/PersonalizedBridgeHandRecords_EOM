@@ -805,8 +805,8 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # Streamlit UI
 # ---------------------------------------------------------------------------
 st.set_page_config(
-    page_title="Personalized EOM Bridge Hand Records",
-    page_icon=" Personalized EOM Bridge Hand Records",
+    page_title="Personalized EOM Hand Records",
+    page_icon="clubs.png",
     layout="centered"
 )
 
@@ -823,7 +823,7 @@ for key, default in [
 
 # ── STEP 1: Disclaimer ───────────────────────────────────────────────────────
 if st.session_state.step == "disclaimer":
-    st.title(" Personalized EOM Bridge Hand Records")
+    st.title(" Personalized EOM Hand Records")
     st.markdown("### Όροι Χρήσης Εφαρμογής")
     st.info(
         "Η χρήση αυτής της εφαρμογής παρέχεται δωρεάν, αποκλειστικά για "
@@ -852,7 +852,7 @@ if st.session_state.step == "disclaimer":
 
 # ── STEP 2: Authorization ────────────────────────────────────────────────────
 elif st.session_state.step == "auth":
-    st.title(" Personalized EOM Bridge Hand Records")
+    st.title(" Personalized EOM Hand Records")
     st.markdown("### Εξουσιοδότηση")
     reg = st.text_input("Αριθμός Μητρώου παίκτη", placeholder="π.χ. 15672")
     if st.button("✔ Είσοδος", type="primary"):
@@ -874,7 +874,7 @@ elif st.session_state.step == "auth":
 
 # ── STEP 3: Pick tournament (Fixed Transition) ──────────────────────────────
 elif st.session_state.step == "pick":
-    st.title(" Personalized EOM Bridge Hand Records")
+    st.title(" Personalized EOM Hand Records")
     st.markdown("### Επιλογή Τουρνουά Τριών Τελευταίων Ημερών")
 
     if not st.session_state.tournaments:
@@ -929,7 +929,7 @@ elif st.session_state.step == "pick":
 
 # ── STEP 4: Generate PDF ─────────────────────────────────────────────────────
 elif st.session_state.step == "generate":
-    st.title(" Personalized EOM Bridge Hand Records")
+    st.title(" Personalized EOM Hand Records")
     reg           = st.session_state.reg
     page_url      = st.session_state.chosen_url
     chosen_title  = st.session_state.chosen_title

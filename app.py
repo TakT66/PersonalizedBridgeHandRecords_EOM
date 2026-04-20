@@ -447,6 +447,8 @@ def scrape_pair_results(card_url, page_url):
             def first_a_text(td_html):
                 m = re.search(r'<a[^>]*>(.*?)</a>', td_html, re.DOTALL)
                 return cell_text(m.group(1)) if m else cell_text(td_html)
+            # Round is in the column just before board number (bi-1)
+            round_val = cell_text(tds[bi-1]) if bi >= 1 else ""
             opp1     = first_a_text(tds[bi+2]) if len(tds) > bi+2 else ""
             opp2     = first_a_text(tds[bi+4]) if len(tds) > bi+4 else ""
             contract = cell_text(tds[bi+5]) if len(tds) > bi+5 else ""
@@ -456,6 +458,7 @@ def scrape_pair_results(card_url, page_url):
             pct      = cell_text(tds[bi+9]) if len(tds) > bi+9 else ""
             if board_num not in results:
                 results[board_num] = {
+                    "round": round_val,
                     "opponent1": opp1, "opponent2": opp2,
                     "contract": contract, "declarer": declarer,
                     "lead": lead, "score": score, "pct": pct,
@@ -555,13 +558,15 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
         pr = pair_results.get(board["board"])
         if pr:
             opp = " - ".join(filter(None, [pr.get("opponent1",""), pr.get("opponent2","")]))
-            parts2 = [opp] if opp else []
+            round_str = ("Γύρος " + pr["round"]) if pr.get("round") else ""
+            first_parts = [p for p in [round_str, opp] if p]
+            parts2 = ["  ".join(first_parts)] if first_parts else []
             detail = []
             if pr.get("contract"): detail.append(pr["contract"])
             if pr.get("declarer"): detail.append("από " + pr["declarer"])
             if pr.get("lead"):     detail.append("Lead: " + pr["lead"])
             if pr.get("score"):    detail.append(pr["score"])
-            if pr.get("pct"):      detail.append(pr["pct"] + "%")
+            if pr.get("pct"):      detail.append(pr["pct"].rstrip("%") + "%")
             if detail:
                 parts2.append("  ".join(detail))
             caption = "\n".join(parts2)
@@ -801,7 +806,7 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # ---------------------------------------------------------------------------
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon="🃏",
+    page_icon="♠",
     layout="centered"
 )
 
@@ -955,10 +960,8 @@ elif st.session_state.step == "generate":
             if card_url:
                 pair_results = scrape_pair_results(card_url, page_url)
             else:
-                st.warning(
-                    "Ο αθλητής με Αριθμό Μητρώου {} δεν συμμετείχε στο τουρνουά "
-                    "που επιλέξατε.".format(reg)
-                )
+                st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
+                st.stop()
 
         progress_bar = st.progress(0, text="Rendering boards…")
         images = []

@@ -829,7 +829,7 @@ if st.session_state.step == "disclaimer":
 
     with col1:
     # Αντικατάστησε το "logo.png" με το όνομα του αρχείου σου
-      st.image("logo.png", width=60) 
+      st.image("clubs.png", width=60) 
 
     with col2:
       st.title("Personalized EOM Hand Records")

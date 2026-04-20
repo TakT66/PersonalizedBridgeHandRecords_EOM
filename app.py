@@ -692,30 +692,41 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     dt_x += round(5*1240/210) + round(3*1240/210)
     tbl_right = dt_x + tbl_total_w
 
+
+# --- ΑΝΤΙΚΑΤΑΣΤΑΣΗ ΤΟΥ BLOCK ΥΠΟΛΟΓΙΣΜΟΥ HCP ΣΤΗ render_board ---
     _ppm      = 1240 / 210
-    _hcp_w    = round(8.3  * _ppm)
-    # Enlarge _hcp_h so N (top) and S (bottom) labels don't overlap:
-    # original was round(7.5*_ppm)≈44px; we use south_y-north_y to span full hand area
-    _hcp_h    = (south_y - north_y)          # spans from north_y to south_y
-    _hcp_rx2  = tbl_right
-    _hcp_rx1  = _hcp_rx2 - _hcp_w - round(10 * _ppm)
+    # Μειώνουμε το πλάτος (width) για να έρθουν τα N-S πιο κοντά μεταξύ τους
+    _hcp_w    = round(5.0 * _ppm) 
+    
+    # Το δεξί όριο παραμένει το τέλος του πίνακα DDS
+    _hcp_rx2  = tbl_right 
+    # Το αριστερό όριο υπολογίζεται βάσει του νέου στενού πλάτους
+    _hcp_rx1  = _hcp_rx2 - _hcp_w - round(12 * _ppm) 
+    
     _hcp_ry1  = north_y - 4
-    _hcp_ry2  = _hcp_ry1 + _hcp_h
+    _hcp_ry2  = south_y + lh - 4 # Το φέρνουμε στο ύψος του South hand
     _hcp_cx   = (_hcp_rx1 + _hcp_rx2) // 2
-    _hcp_cy   = (_hcp_ry1 + _hcp_ry2) // 2
+    _hcp_cy   = (side_y + lh * 2) # Κεντράρισμα καθ' ύψος με τα East/West hands
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
         hstr = str(hcp_val); kstr = "({})".format(kr_val)
         hw_  = tw(hstr, fhcpb); kw_ = tw(kstr, fkr); gap = 2
         total_w = hw_ + gap + kw_
-        sx = x - total_w // 2 if anchor == "c" else (x - total_w if anchor == "r" else x)
+        if anchor == "c":
+            sx = x - total_w // 2
+        elif anchor == "r":
+            sx = x - total_w
+        else: # anchor == "l"
+            sx = x
         draw.text((sx, y), hstr, fill=hcol, font=fhcpb)
         draw.text((sx + hw_ + gap, y + hcph // 2 - th(fkr) // 2), kstr, fill=krcol, font=fkr)
 
-    draw_hcp_kr(_hcp_cx,      _hcp_ry1 + 1,           hcp_n, kr_n, "c")
-    draw_hcp_kr(_hcp_cx,      _hcp_ry2 - hcph - 1,    hcp_s, kr_s, "c")
-    draw_hcp_kr(_hcp_rx1 + 2, _hcp_cy  - hcph // 2,   hcp_w, kr_w, "l")
-    draw_hcp_kr(_hcp_rx2 - 2, _hcp_cy  - hcph // 2,   hcp_e, kr_e, "r")
+    # Τοποθέτηση των HCP
+    draw_hcp_kr(_hcp_cx,      _hcp_ry1,           hcp_n, kr_n, "c") # North
+    draw_hcp_kr(_hcp_cx,      _hcp_ry2,           hcp_s, kr_s, "c") # South
+    draw_hcp_kr(_hcp_rx1 + 2, _hcp_cy,            hcp_w, kr_w, "l") # West
+    draw_hcp_kr(_hcp_rx2 - 2, _hcp_cy,            hcp_e, kr_e, "r") # East
+
 
     if dds_table:
         draw.rectangle([dt_x, dt_y, dt_x+tbl_total_w-1, dt_y+hdr_h-1], fill=(220,220,240))
@@ -840,8 +851,9 @@ def _make_spade_icon():
 
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon=_make_spade_icon(),
+    page_icon="♣️", # Χρήση του emoji για σπαθί
     layout="centered"
+)
 )
 
 # ── Session state init ───────────────────────────────────────────────────────

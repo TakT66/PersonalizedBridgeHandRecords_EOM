@@ -692,30 +692,25 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     dt_x += round(5*1240/210) + round(3*1240/210)
     tbl_right = dt_x + tbl_total_w
 
-    _ppm      = 1240 / 210
-    _hcp_w    = round(8.3  * _ppm)
-    # Enlarge _hcp_h so N (top) and S (bottom) labels don't overlap:
-    # original was round(7.5*_ppm)≈44px; we use south_y-north_y to span full hand area
-    _hcp_h    = (south_y - north_y)          # spans from north_y to south_y
-    _hcp_rx2  = tbl_right
-    _hcp_rx1  = _hcp_rx2 - _hcp_w - round(10 * _ppm)
-    _hcp_ry1  = north_y - 4
-    _hcp_ry2  = _hcp_ry1 + _hcp_h
-    _hcp_cx   = (_hcp_rx1 + _hcp_rx2) // 2
-    _hcp_cy   = (_hcp_ry1 + _hcp_ry2) // 2
+    _ppm = 1240/210
+    _hcp_w = round(8.3*_ppm); _hcp_h = round(7.5*_ppm)
+    _hcp_rx2 = tbl_right; _hcp_ry1 = north_y - 4
+    _hcp_rx1 = _hcp_rx2 - _hcp_w - round(10*_ppm)
+    _hcp_ry2 = _hcp_ry1 + _hcp_h + 20
+    _hcp_cx  = (_hcp_rx1+_hcp_rx2)//2; _hcp_cy = (_hcp_ry1+_hcp_ry2)//2
 
     def draw_hcp_kr(x, y, hcp_val, kr_val, anchor="c"):
-        hstr = str(hcp_val); kstr = "({})".format(kr_val)
-        hw_  = tw(hstr, fhcpb); kw_ = tw(kstr, fkr); gap = 2
-        total_w = hw_ + gap + kw_
-        sx = x - total_w // 2 if anchor == "c" else (x - total_w if anchor == "r" else x)
+        hstr = str(hcp_val); kstr = "({})" .format(kr_val)
+        hw_ = tw(hstr, fhcpb); kw_ = tw(kstr, fkr); gap = 2
+        total_w = hw_+gap+kw_
+        sx = x-total_w//2 if anchor=="c" else (x-total_w if anchor=="r" else x)
         draw.text((sx, y), hstr, fill=hcol, font=fhcpb)
-        draw.text((sx + hw_ + gap, y + hcph // 2 - th(fkr) // 2), kstr, fill=krcol, font=fkr)
+        draw.text((sx+hw_+gap, y+hcph//2-th(fkr)//2), kstr, fill=krcol, font=fkr)
 
-    draw_hcp_kr(_hcp_cx,      _hcp_ry1 + 1,           hcp_n, kr_n, "c")
-    draw_hcp_kr(_hcp_cx,      _hcp_ry2 - hcph - 1,    hcp_s, kr_s, "c")
-    draw_hcp_kr(_hcp_rx1 + 2, _hcp_cy  - hcph // 2,   hcp_w, kr_w, "l")
-    draw_hcp_kr(_hcp_rx2 - 2, _hcp_cy  - hcph // 2,   hcp_e, kr_e, "r")
+    draw_hcp_kr(_hcp_cx, _hcp_ry1+1,        hcp_n, kr_n, "c")
+    draw_hcp_kr(_hcp_cx, _hcp_ry2-hcph-1,   hcp_s, kr_s, "c")
+    draw_hcp_kr(_hcp_rx1+2, _hcp_cy-hcph//2, hcp_w, kr_w, "l")
+    draw_hcp_kr(_hcp_rx2-2, _hcp_cy-hcph//2, hcp_e, kr_e, "r")
 
     if dds_table:
         draw.rectangle([dt_x, dt_y, dt_x+tbl_total_w-1, dt_y+hdr_h-1], fill=(220,220,240))
@@ -809,38 +804,9 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
 # ---------------------------------------------------------------------------
 # Streamlit UI
 # ---------------------------------------------------------------------------
-def _make_spade_icon():
-    """Create a ♠ favicon as a PIL Image for st.set_page_config."""
-    img = Image.new("RGBA", (64, 64), (255, 255, 255, 0))
-    d = ImageDraw.Draw(img)
-    # Try fonts in order of preference
-    fnt = None
-    for font_path in [FONT_BOLD_PATH, FONT_PATH, FONT_BOLD_ITALIC_PATH]:
-        try:
-            fnt = ImageFont.truetype(str(font_path), 56)
-            break
-        except Exception:
-            pass
-    if fnt is None:
-        try:
-            fnt = ImageFont.load_default(size=48)
-        except Exception:
-            fnt = ImageFont.load_default()
-    # Center the ♠ glyph
-    try:
-        bbox = d.textbbox((0, 0), "♠", font=fnt)
-        gw = bbox[2] - bbox[0]
-        gh = bbox[3] - bbox[1]
-        ox = (64 - gw) // 2 - bbox[0]
-        oy = (64 - gh) // 2 - bbox[1]
-    except Exception:
-        ox, oy = 4, 4
-    d.text((ox, oy), "♠", fill=(0, 0, 0, 255), font=fnt)
-    return img
-
 st.set_page_config(
     page_title="Bridge Hand Records",
-    page_icon=_make_spade_icon(),
+    page_icon="♠",
     layout="centered"
 )
 
@@ -897,7 +863,7 @@ elif st.session_state.step == "auth":
             if reg.strip() not in valid:
                 st.error(
                     "⛔ Η χρήση της εφαρμογής επιτρέπεται μόνο σε εξουσιοδοτημένους "
-                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το tak_0000@yahoo.com"
+                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το xxxxx@xxx.com"
                 )
                 st.stop()
             else:
@@ -995,9 +961,6 @@ elif st.session_state.step == "generate":
                 pair_results = scrape_pair_results(card_url, page_url)
             else:
                 st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
-                if st.button("⬅ Επιστροφή στην εισαγωγή αριθμού μητρώου"):
-                    st.session_state.step = "auth"
-                    st.rerun()
                 st.stop()
 
         progress_bar = st.progress(0, text="Rendering boards…")

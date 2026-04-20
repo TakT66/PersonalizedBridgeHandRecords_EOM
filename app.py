@@ -825,14 +825,14 @@ for key, default in [
 if st.session_state.step == "disclaimer":
 
 # Δημιουργούμε δύο στήλες: μια μικρή για το logo και μια μεγάλη για τον τίτλο
-col1, col2 = st.columns([0.1, 0.9]) 
+    col1, col2 = st.columns([0.1, 0.9]) 
 
-with col1:
+    with col1:
     # Αντικατάστησε το "logo.png" με το όνομα του αρχείου σου
-    st.image("logo.png", width=60) 
+      st.image("logo.png", width=60) 
 
-with col2:
-    st.title("Personalized EOM Hand Records")
+    with col2:
+      st.title("Personalized EOM Hand Records")
 
 #    st.title(" Personalized EOM Hand Records")
     st.markdown("### Όροι Χρήσης Εφαρμογής")

@@ -497,7 +497,7 @@ def _decode(r):
             pass
     return r.text
 
-def scrape_tournament_list(max_page=6):
+def scrape_tournament_list(max_page=8):
     base    = "https://hellasbridge.org/results"
     headers = {"User-Agent": "Mozilla/5.0"}
     tournaments = []
@@ -974,7 +974,7 @@ elif st.session_state.step == "pick":
 
     if not st.session_state.tournaments:
         with st.spinner("Ανάκτηση δεδομένων..."):
-            raw_t = scrape_tournament_list(max_page=4)
+            raw_t = scrape_tournament_list(max_page=8)
             # Φίλτρο 3 ημερών
             cutoff = date.today() - timedelta(days=3)
             st.session_state.tournaments = [
@@ -1019,7 +1019,7 @@ elif st.session_state.step == "pick":
 
     if st.button("⬅ Πίσω"):
         st.session_state.tournaments = None
-        st.session_state.step = "init"
+        st.session_state.step = "auth"
         st.rerun()
 
 # ── STEP 4: Generate PDF ─────────────────────────────────────────────────────
@@ -1069,6 +1069,9 @@ elif st.session_state.step == "generate":
             pbn_text = fetch_pbn_from_url(page_url)
         if not pbn_text:
             st.error("Δεν υπάρχουν διανομές για το τουρνουά που επιλέξατε.")
+            if st.button("⬅ Πίσω στα τουρνουά"):
+                st.session_state.step = "pick"
+                st.rerun()
             st.stop()
 
         boards = parse_pbn(pbn_text)
@@ -1084,6 +1087,9 @@ elif st.session_state.step == "generate":
                 pair_results = scrape_pair_results(card_url, page_url)
             else:
                 st.error("Ο αθλητής δεν συμμετείχε στο τουρνουά που επιλέξατε.")
+                if st.button("⬅ Πίσω στα τουρνουά"):
+                    st.session_state.step = "pick"
+                    st.rerun()
                 st.stop()
 
         progress_bar = st.progress(0, text="Rendering boards…")

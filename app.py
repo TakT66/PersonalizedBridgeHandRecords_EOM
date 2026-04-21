@@ -78,6 +78,39 @@ def load_valid_numbers():
         return set()
 
 
+# ---------------------------------------------------------------------------
+# Download Logger (Google Sheets) — αποτυχία δεν επηρεάζει την εφαρμογή
+# ---------------------------------------------------------------------------
+SHEET_NAME = "Downloads"  # Το όνομα του Google Sheet που έφτιαξες
+
+def log_download(reg, tournament, club, filename):
+    """
+    Γράφει μια γραμμή στο Google Sheet κάθε φορά που κατεβαίνει PDF.
+    Αν αποτύχει για οποιονδήποτε λόγο, αγνοεί σιωπηλά το σφάλμα
+    ώστε η εφαρμογή να συνεχίζει κανονικά.
+    """
+    try:
+        import gspread
+        from google.oauth2.service_account import Credentials
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scopes)
+        gc    = gspread.authorize(creds)
+        sh    = gc.open(SHEET_NAME)
+        ws    = sh.sheet1
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        ws.append_row(
+            [timestamp, reg, tournament, club, filename],
+            value_input_option="USER_ENTERED"
+        )
+    except Exception:
+        pass  # Σιωπηλή αποτυχία — η εφαρμογή συνεχίζει κανονικά
+
 
 # ---------------------------------------------------------------------------
 # Font helpers
@@ -1130,6 +1163,9 @@ elif st.session_state.step == "generate":
         safe_title = re.sub(r'[^\w]', '_', chosen_title)[:60] or "bridge"
         safe_club  = re.sub(r'[^\w]', '_', chosen_club)[:40] if chosen_club else ""
         filename   = (safe_club + "_" + safe_title if safe_club else safe_title) + ".pdf"
+
+        # Καταγραφή download — αποτυχία δεν επηρεάζει την εφαρμογή
+        log_download(reg, chosen_title, chosen_club, filename)
 
         st.success("✅ Το PDF είναι έτοιμο!")
         st.download_button(

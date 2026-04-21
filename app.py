@@ -938,7 +938,7 @@ elif st.session_state.step == "auth":
             if reg.strip() not in valid:
                 st.error(
                     "⛔ Η χρήση της εφαρμογής επιτρέπεται μόνο σε εξουσιοδοτημένους "
-                    "χρήστες. Για εξουσιοδότηση επικοινωνήστε με το tak_0000@yahoo.com"
+                    "χρήστες. Για να ζητήσετε πρόσβαση επικοινωνήστε με το tak_0000@yahoo.com"
                 )
                 st.stop()
             else:
@@ -1093,6 +1093,10 @@ elif st.session_state.step == "generate":
 
         with st.spinner("Αναζήτηση αποτελεσμάτων αθλητή…"):
             header      = scrape_tournament_info(page_url)
+            # Αφαίρεση "| ΕΟΜ |" (και παραλλαγές) από την επικεφαλίδα
+            header = re.sub(r'\s*\|\s*ΕΟΜ\s*\|\s*', ' ', header, flags=re.IGNORECASE).strip()
+            header = re.sub(r'\s*\|\s*EOM\s*\|\s*', ' ', header, flags=re.IGNORECASE).strip()
+            header = re.sub(r'\s{2,}', '  ', header)
             # Αντικατάσταση "EOM" με το όνομα σωματείου αν υπάρχει
             if chosen_club:
                 header = re.sub(r'\bEOM\b', chosen_club, header, flags=re.IGNORECASE)

@@ -496,8 +496,9 @@ def scrape_pair_results(card_url, page_url):
             def first_a_text(td_html):
                 m = re.search(r'<a[^>]*>(.*?)</a>', td_html, re.DOTALL)
                 return cell_text(m.group(1)) if m else cell_text(td_html)
-            # Round is in the column just before board number (bi-1)
-            round_val = cell_text(tds[bi-1]) if bi >= 1 else ""
+            # Round is two columns before board number (bi-2), table is bi-1
+            round_val = cell_text(tds[bi-2]) if bi >= 2 else ""
+            table_val = cell_text(tds[bi-1]) if bi >= 1 else ""
             opp1     = first_a_text(tds[bi+2]) if len(tds) > bi+2 else ""
             opp2     = first_a_text(tds[bi+4]) if len(tds) > bi+4 else ""
             contract = cell_text(tds[bi+5]) if len(tds) > bi+5 else ""
@@ -507,7 +508,7 @@ def scrape_pair_results(card_url, page_url):
             pct      = cell_text(tds[bi+9]) if len(tds) > bi+9 else ""
             if board_num not in results:
                 results[board_num] = {
-                    "round": round_val,
+                    "round": round_val, "table": table_val,
                     "opponent1": opp1, "opponent2": opp2,
                     "contract": contract, "declarer": declarer,
                     "lead": lead, "score": score, "pct": pct,
@@ -606,9 +607,11 @@ def render_board(board, cell_w, cell_h, pair_results=None, header=""):
     if pair_results:
         pr = pair_results.get(board["board"])
         if pr:
-            opp = " - ".join(filter(None, [pr.get("opponent1",""), pr.get("opponent2","")]))
+            table_parts = pr.get("table", "").split()
+            orientation = table_parts[-1] if table_parts else pr.get("table", "")
             round_str = ("Γύρος " + pr["round"]) if pr.get("round") else ""
-            first_parts = [p for p in [round_str, opp] if p]
+            opp = " - ".join(filter(None, [pr.get("opponent1",""), pr.get("opponent2","")]))
+            first_parts = [p for p in [round_str, orientation, opp] if p]
             parts2 = ["  ".join(first_parts)] if first_parts else []
             detail = []
             if pr.get("contract"): detail.append(pr["contract"])

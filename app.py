@@ -103,7 +103,9 @@ def log_download(reg, tournament, club, filename):
         sh    = gc.open(SHEET_NAME)
         ws    = sh.sheet1
 
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        from datetime import timezone, timedelta
+        tz_greece = timezone(timedelta(hours=3))
+        timestamp = datetime.now(tz_greece).strftime("%Y-%m-%d %H:%M:%S")
         ws.append_row(
             [timestamp, reg, tournament, club, filename],
             value_input_option="USER_ENTERED"

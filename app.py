@@ -3625,7 +3625,7 @@ elif st.session_state.step == "generate":
         images = []
         for i, board in enumerate(boards):
             progress_bar.progress((i+1)/len(boards),
-                                  text="Υπολογισμός αντάμ – Board {}/{}…".format(i+1, len(boards)))
+                                  text="Board {}/{}…".format(i+1, len(boards)))
             cell_w = (A4_W - 2*MARGIN - 2*PADDING) // COLS
             cell_h = (A4_H - 2*MARGIN - 2*PADDING) // ROWS
             img = render_board(board, cell_w, cell_h,

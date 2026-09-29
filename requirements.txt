@@ -5,3 +5,4 @@ pandas
 endplay==0.5.12
 gspread
 google-auth
+pypdf

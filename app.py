@@ -19,6 +19,7 @@ BASE_DIR = Path(__file__).resolve().parent
 FONT_PATH = BASE_DIR / "DejaVuSans.ttf"
 FONT_BOLD_PATH = BASE_DIR / "DejaVuSans-Bold.ttf"
 FONT_BOLD_ITALIC_PATH = BASE_DIR / "DejaVuSans-BoldOblique.ttf"
+LEGEND_PATH = BASE_DIR / "Legend.pdf"   # υπόμνημα: μπαίνει ως τελευταία σελίδα
 
 import requests
 import streamlit as st
@@ -996,6 +997,31 @@ def render_boards(boards, pair_results=None):
         images.append(img)
     return images, cell_w, cell_h
 
+# ---------------------------------------------------------------------------
+# Υπόμνημα (Legend.pdf) ως τελευταία σελίδα
+# ---------------------------------------------------------------------------
+def append_legend(pdf_bytes):
+    """
+    Προσθέτει τις σελίδες του Legend.pdf στο τέλος του παραγόμενου PDF.
+    Η συγχώνευση γίνεται σε επίπεδο PDF (όχι εικόνας), οπότε τα hyperlinks
+    του υπομνήματος παραμένουν clickable.
+    Αν το Legend.pdf λείπει ή κάτι αποτύχει, επιστρέφει το αρχικό PDF
+    ώστε η εφαρμογή να συνεχίζει κανονικά.
+    """
+    try:
+        if not LEGEND_PATH.exists():
+            return pdf_bytes
+        from pypdf import PdfReader, PdfWriter
+        writer = PdfWriter()
+        writer.append(PdfReader(io.BytesIO(pdf_bytes)))
+        writer.append(PdfReader(str(LEGEND_PATH)))
+        out = io.BytesIO()
+        writer.write(out)
+        return out.getvalue()
+    except Exception:
+        return pdf_bytes
+
+
 def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None, boards=None):
     n_pages = math.ceil(len(images) / BOARDS_PER_PAGE)
     pages   = []
@@ -1025,7 +1051,7 @@ def assemble_pages_to_bytes(images, cell_w, cell_h, header="", pair_results=None
                       append_images=pages[1:], resolution=150)
     buf.seek(0)
     # Τελευταία σελίδα: υπόμνημα
-    return buf.read()
+    return append_legend(buf.read())
 
 # ---------------------------------------------------------------------------
 # ΚΛΙΜΑΚΑ ΑΠΟΤΕΛΕΣΜΑΤΩΝ ΑΝΑ ΔΙΑΝΟΜΗ
@@ -1718,7 +1744,8 @@ def assemble_scale_pages_to_bytes(images, scale_items, layout, header="",
         pages[0].save(buf, format="PDF", save_all=True,
                       append_images=pages[1:], resolution=150)
     buf.seek(0)
-    return buf.read()
+    # Τελευταία σελίδα: υπόμνημα
+    return append_legend(buf.read())
 
 
 # ---------------------------------------------------------------------------
